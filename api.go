@@ -9,10 +9,10 @@ type ModbusError struct {
 	ExceptionCode int
 }
 
-type Modbus interface {
+type ModbusClient interface {
 	// Bit access
-	ReadDiscreteInputs(address, count int) (results []byte, err error)
-	ReadCoils(address, count int) ([]byte, error)
+	ReadDiscreteInputs(address, quantity int) (results []byte, err error)
+	ReadCoils(address, quantity int) (results []byte, err error)
 	WriteSingleCoil(address, count int)
 	WriteMultipleCoils(address, count int)
 
