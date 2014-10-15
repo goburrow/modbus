@@ -50,9 +50,9 @@ func (e *ModbusError) Error() string {
 	// Really need fmt?
 	var buf bytes.Buffer
 	buf.WriteString("modbus exception: ")
-	buf.WriteString(strconv.Itoa(e.ExceptionCode))
+	buf.WriteString(strconv.FormatInt(int64(e.ExceptionCode), 10))
 	buf.WriteString(", function: ")
-	buf.WriteString(strconv.Itoa(e.FunctionCode))
+	buf.WriteString(strconv.FormatInt(int64(e.FunctionCode), 10))
 	return buf.String()
 }
 
@@ -81,29 +81,24 @@ type modbusClient struct {
 }
 
 // Request:
-//  Function code: 1 byte (0x01)
-// 	Starting address: 2 bytes
-// 	Quantity of coils: 2 bytes
+//  Function code         : 1 byte (0x01)
+// 	Starting address      : 2 bytes
+// 	Quantity of registers : 2 bytes
 // Response:
-//  Function code: 1 byte (0x01)
-// 	Byte count: 1 byte
-// 	Coil status: n bytes (=N or N + 1)
-func (mb *modbusClient) ReadCoils(address, quantity int) (results []byte, err error) {
-	data := [4]byte{}
-	binary.BigEndian.PutUint16(data[:], uint16(address))
-	binary.BigEndian.PutUint16(data[2:], uint16(quantity))
-
+//  Function code         : 1 byte (0x01)
+// 	Byte count            : 1 byte
+// 	Input status          : N* bytes (=N or N+1)
+func (mb *modbusClient) ReadCoils(address, quantity uint16) (results []byte, err error) {
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadCoils,
-		Data:         data[:],
+		Data:         dataRead(address, quantity),
 	}
 	response, err := mb.send(&request)
 	if err != nil {
 		return
 	}
-	// Expect count / 8 bytes
 	count := int(response.Data[0])
-	if count != quantity {
+	if count != (len(response.Data)-1) {
 		err = ErrResponseSize
 		return
 	}
@@ -111,11 +106,92 @@ func (mb *modbusClient) ReadCoils(address, quantity int) (results []byte, err er
 	return
 }
 
-// Bit access
-func (mb *modbusClient) ReadDiscreteInputs(address, quantity int) (results []byte, err error) {
+// Request:
+//  Function code         : 1 byte (0x02)
+// 	Starting address      : 2 bytes
+// 	Quantity of registers : 2 bytes
+// Response:
+//  Function code         : 1 byte (0x02)
+// 	Byte count            : 1 byte
+// 	Input status          : N* bytes (=N or N+1)
+func (mb *modbusClient) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeReadDiscreteInputs,
+		Data:         dataRead(address, quantity),
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	count := int(response.Data[0])
+	if count != (len(response.Data)-1) {
+		err = ErrResponseSize
+		return
+	}
+	results = response.Data[1:]
 	return
 }
 
+// Request:
+//  Function code         : 1 byte (0x03)
+// 	Starting address      : 2 bytes
+// 	Quantity of registers : 2 bytes
+// Response:
+//  Function code         : 1 byte (0x03)
+// 	Byte count            : 1 byte
+// 	Register value        : Nx2 bytes
+func (mb *modbusClient) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeReadHoldingRegisters,
+		Data:         dataRead(address, quantity),
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	count := int(response.Data[0])
+	if count != (len(response.Data)-1) {
+		err = ErrResponseSize
+		return
+	}
+	results = response.Data[1:]
+	return
+}
+
+// Request:
+//  Function code         : 1 byte (0x04)
+// 	Starting address      : 2 bytes
+// 	Quantity of registers : 2 bytes
+// Response:
+//  Function code         : 1 byte (0x04)
+// 	Byte count            : 1 byte
+// 	Input registers       : Nx2 bytes
+func (mb *modbusClient) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeReadInputRegisters,
+		Data:         dataRead(address, quantity),
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	count := int(response.Data[0])
+	if count != (len(response.Data)-1) {
+		err = ErrResponseSize
+		return
+	}
+	results = response.Data[1:]
+	return
+}
+
+// Request:
+//  Function code         : 1 byte (0x04)
+// 	Starting address      : 2 bytes
+// 	Quantity of registers : 2 bytes
+// Response:
+//  Function code         : 1 byte (0x04)
+// 	Byte count            : 1 byte
+// 	I value        : Nx2 bytes
 func (mb *modbusClient) WriteSingleCoil(address, count int) {
 	return
 }
@@ -125,13 +201,8 @@ func (mb *modbusClient) WriteMultipleCoils(address, count int) {
 }
 
 // 16-bit access
-func (mb *modbusClient) ReadInputRegisters(address, count int) {
 
-}
 
-func (mb *modbusClient) ReadHoldingRegisters(address, count int) {
-
-}
 
 func (mb *modbusClient) WriteSingleRegister(address, count int) {
 
@@ -168,7 +239,7 @@ func (mb *modbusClient) send(request *ProtocolDataUnit) (response *ProtocolDataU
 		err = responseError(response)
 		return
 	}
-	if len(response.Data) == 0 {
+	if response.Data == nil || len(response.Data) == 0 {
 		// Empty response
 		err = ErrNoResponse
 		return
@@ -176,10 +247,19 @@ func (mb *modbusClient) send(request *ProtocolDataUnit) (response *ProtocolDataU
 	return
 }
 
+// Request data for read functions
+func dataRead(address, quantity uint16) []byte {
+	data := [4]byte{}
+	binary.BigEndian.PutUint16(data[:], address)
+	binary.BigEndian.PutUint16(data[2:], quantity)
+
+	return data[:]
+}
+
 func responseError(response *ProtocolDataUnit) error {
-	mbError := &ModbusError{FunctionCode: int(response.FunctionCode)}
+	mbError := &ModbusError{FunctionCode: response.FunctionCode}
 	if response.Data != nil && len(response.Data) > 0 {
-		mbError.ExceptionCode = int(response.Data[0])
+		mbError.ExceptionCode = response.Data[0]
 	}
 	return mbError
 }

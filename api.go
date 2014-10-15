@@ -5,20 +5,20 @@ package modbus
 
 // ModbusError implements error interface
 type ModbusError struct {
-	FunctionCode  int
-	ExceptionCode int
+	FunctionCode  byte
+	ExceptionCode byte
 }
 
 type ModbusClient interface {
 	// Bit access
-	ReadDiscreteInputs(address, quantity int) (results []byte, err error)
-	ReadCoils(address, quantity int) (results []byte, err error)
+	ReadDiscreteInputs(address, quantity uint16) (results []byte, err error)
+	ReadCoils(address, quantity uint16) (results []byte, err error)
 	WriteSingleCoil(address, count int)
 	WriteMultipleCoils(address, count int)
 
 	// 16-bit access
-	ReadInputRegisters(address, count int)
-	ReadHoldingRegisters(address, count int)
+	ReadInputRegisters(address, quantity uint16) (results []byte, err error)
+	ReadHoldingRegisters(address, quantity uint16) (results []byte, err error)
 	WriteSingleRegister(address, count int)
 	WriteMultipleRegisters(address, count int)
 	ReadWriteMultipleRegisters(address, count int)
