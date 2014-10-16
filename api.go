@@ -9,18 +9,30 @@ type ModbusError struct {
 	ExceptionCode byte
 }
 
-type ModbusClient interface {
+type Client interface {
 	// Bit access
+
+	// Returns input status
 	ReadDiscreteInputs(address, quantity uint16) (results []byte, err error)
+	// Returns coils status
 	ReadCoils(address, quantity uint16) (results []byte, err error)
-	WriteSingleCoil(address, count int)
-	WriteMultipleCoils(address, count int)
+	// Returns output value
+	WriteSingleCoil(address, value uint16) (results []byte, err error)
+	// Returns quantity of outputs
+	WriteMultipleCoils(address, quantity uint16, value []byte) (results []byte, err error)
 
 	// 16-bit access
+
+	// Returns input registers
 	ReadInputRegisters(address, quantity uint16) (results []byte, err error)
+	// Returns register value
 	ReadHoldingRegisters(address, quantity uint16) (results []byte, err error)
-	WriteSingleRegister(address, count int)
-	WriteMultipleRegisters(address, count int)
-	ReadWriteMultipleRegisters(address, count int)
-	MaskWriteRegister(address, count int)
+	// Return register value
+	WriteSingleRegister(address, value uint16) (results []byte, err error)
+	// Returns quantity of registers
+	WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error)
+	// Returns read registers value
+	ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error)
+	// Returns AND-mask + OR-mask
+	MaskWriteRegister(address, andMask, orMask uint16) (results []byte, err error)
 }

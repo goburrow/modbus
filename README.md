@@ -1,4 +1,8 @@
-Go implementation of Modbus protocol
+go modbus
+=========
+Fault-tolerant implementation of Modbus protocol in Go.
+
+Incubating - do not use in production yet.
 
 Documents
 ---------

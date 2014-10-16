@@ -6,25 +6,25 @@ package modbus
 import (
 	"bytes"
 	"encoding/binary"
-	"time"
-	"net"
 	"fmt"
+	"net"
+	"time"
 )
 
 const (
-	ModbusTcpProtocolIdentifier uint16 = 0x0000
-	ModbusTcpUnitIdentifier     byte   = 0xFF
+	TcpProtocolIdentifier uint16 = 0x0000
+	TcpUnitIdentifier     byte   = 0xFF
 
 	// Modbus Application Protocol
-	ModbusTcpHeaderLength = 7
-	ModbusTcpMaxADULength = 260
+	TcpHeaderLength = 7
+	TcpMaxADULength = 260
 )
 
-func ModbusTcpClient(address string) ModbusClient {
+func TcpClient(address string) Client {
 	encodeDecoder := &TcpEncodeDecoder{}
 	transporter := &TcpTransporter{address: address}
 
-	return &modbusClient{encoder: encodeDecoder, decoder: encodeDecoder, transporter: transporter}
+	return &client{encoder: encodeDecoder, decoder: encodeDecoder, transporter: transporter}
 }
 
 // Implements Encoder and Decoder interface
@@ -32,7 +32,7 @@ type TcpEncodeDecoder struct {
 	// For synchronization between messages of server & client
 	// TODO put in a context for the sake of thread-safe
 	transactionId uint16
-	unitId byte
+	unitId        byte
 }
 
 // Adds modbus application protocol header:
@@ -49,7 +49,7 @@ func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error
 		return
 	}
 	// Protocol identifier
-	if err = binary.Write(&buf, binary.BigEndian, ModbusTcpProtocolIdentifier); err != nil {
+	if err = binary.Write(&buf, binary.BigEndian, TcpProtocolIdentifier); err != nil {
 		return
 	}
 	// Length = sizeof(UnitId) + sizeof(FunctionCode) + Data
@@ -97,7 +97,7 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 	if err = binary.Read(buf, binary.BigEndian, &protocolId); err != nil {
 		return
 	}
-	if protocolId != ModbusTcpProtocolIdentifier {
+	if protocolId != TcpProtocolIdentifier {
 		err = ErrTransactionId
 		return
 	}
@@ -157,24 +157,24 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	}
 	fmt.Printf("%v\n", aduRequest)
 	// Read header first
-	data := [ModbusTcpMaxADULength]byte{}
-	if n, err = conn.Read(data[:ModbusTcpHeaderLength]); err != nil {
+	data := [TcpMaxADULength]byte{}
+	if n, err = conn.Read(data[:TcpHeaderLength]); err != nil {
 		fmt.Printf("%v %v %v\n", data, n, err)
 		return
 	}
-	if n != ModbusTcpHeaderLength {
+	if n != TcpHeaderLength {
 		err = ErrResponseSize
 		return
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
 	length := int(binary.BigEndian.Uint16(data[4:]))
 	if length <= 0 {
-		err = ErrNoResponse
+		err = ErrResponse
 		return
 	}
 	// Skip unit id
-	length = ModbusTcpHeaderLength - 1 + length
-	idx := ModbusTcpHeaderLength
+	length = TcpHeaderLength - 1 + length
+	idx := TcpHeaderLength
 	for idx < length {
 		if n, err = conn.Read(data[idx:length]); err != nil {
 			return
