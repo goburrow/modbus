@@ -23,6 +23,10 @@ type client struct {
 //  Byte count            : 1 byte
 //  Coil status           : N* bytes (=N or N+1)
 func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error) {
+	if (quantity < 1 || quantity > 2000) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 2000)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadCoils,
 		Data:         dataBlock(address, quantity),
@@ -50,6 +54,10 @@ func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error
 //  Byte count            : 1 byte
 //  Input status          : N* bytes (=N or N+1)
 func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
+	if (quantity < 1 || quantity > 2000) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 2000)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadDiscreteInputs,
 		Data:         dataBlock(address, quantity),
@@ -77,6 +85,10 @@ func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, 
 //  Byte count            : 1 byte
 //  Register value        : Nx2 bytes
 func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
+	if (quantity < 1 || quantity > 125) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 125)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadHoldingRegisters,
 		Data:         dataBlock(address, quantity),
@@ -104,6 +116,10 @@ func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte
 //  Byte count            : 1 byte
 //  Input registers       : N bytes
 func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
+	if (quantity < 1 || quantity > 125) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 125)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadInputRegisters,
 		Data:         dataBlock(address, quantity),
@@ -133,7 +149,7 @@ func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, 
 func (mb *client) WriteSingleCoil(address, value uint16) (results []byte, err error) {
 	// The requested ON/OFF state can only be 0xFF00 and 0x0000
 	if value != 0xFF00 && value != 0x0000 {
-		err = fmt.Errorf("modbus: state must be either 0xFF00 (ON) or 0x0000 (OFF)")
+		err = fmt.Errorf("modbus: state '%v' must be either 0xFF00 (ON) or 0x0000 (OFF)", value)
 		return
 	}
 	request := ProtocolDataUnit{
@@ -210,6 +226,10 @@ func (mb *client) WriteSingleRegister(address, value uint16) (results []byte, er
 //  Starting address      : 2 bytes
 //  Quantity of outputs   : 2 bytes
 func (mb *client) WriteMultipleCoils(address, quantity uint16, value []byte) (results []byte, err error) {
+	if (quantity < 1 || quantity > 1968) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 1968)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeWriteMultipleCoils,
 		Data:         dataBlockSuffix(value, address, quantity),
@@ -248,6 +268,10 @@ func (mb *client) WriteMultipleCoils(address, quantity uint16, value []byte) (re
 //  Starting address      : 2 bytes
 //  Quantity of registers : 2 bytes
 func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error) {
+	if (quantity < 1 || quantity > 123) {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 123)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeWriteMultipleRegisters,
 		Data:         dataBlockSuffix(value, address, quantity),
@@ -331,6 +355,14 @@ func (mb *client) MaskWriteRegister(address, andMask, orMask uint16) (results []
 //  Byte count            : 2 bytes
 //  Read registers value  : Nx2 bytes
 func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error) {
+	if (readQuantity < 1 || readQuantity > 125) {
+		err = fmt.Errorf("modbus: quantity to read '%v' must be between '%v' and '%v',", readQuantity, 1, 125)
+		return
+	}
+	if (writeQuantity < 1 || writeQuantity > 121) {
+		err = fmt.Errorf("modbus: quantity to write '%v' must be between '%v' and '%v',", writeQuantity, 1, 121)
+		return
+	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeReadWriteMultipleRegisters,
 		Data:         dataBlockSuffix(value, readAddress, readQuantity, writeAddress, writeQuantity),
