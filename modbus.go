@@ -4,9 +4,7 @@
 package modbus
 
 import (
-	"bytes"
-	"errors"
-	"strconv"
+	"fmt"
 )
 
 const (
@@ -37,22 +35,8 @@ const (
 	ExceptionCodeGatewayTargetDeviceFailedToRespond = 11
 )
 
-// Common errors
-var (
-	ErrBadRequest    = errors.New("invalid request")
-	ErrResponse      = errors.New("invalid response data")
-	ErrResponseSize  = errors.New("response data size mismatch")
-	ErrTransactionId = errors.New("transaction id mismatch")
-)
-
 func (e *ModbusError) Error() string {
-	// Really need fmt?
-	var buf bytes.Buffer
-	buf.WriteString("modbus exception: ")
-	buf.WriteString(strconv.FormatInt(int64(e.ExceptionCode), 10))
-	buf.WriteString(", function: ")
-	buf.WriteString(strconv.FormatInt(int64(e.FunctionCode), 10))
-	return buf.String()
+	return fmt.Sprintf("modbus exception: %v, function: %v", e.ExceptionCode, e.FunctionCode)
 }
 
 // PDU

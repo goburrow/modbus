@@ -5,6 +5,7 @@ package modbus
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 type client struct {
@@ -31,8 +32,9 @@ func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error
 		return
 	}
 	count := int(response.Data[0])
-	if count != (len(response.Data) - 1) {
-		err = ErrResponseSize
+	length := len(response.Data) - 1
+	if count != length {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", length, count)
 		return
 	}
 	results = response.Data[1:]
@@ -57,8 +59,9 @@ func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, 
 		return
 	}
 	count := int(response.Data[0])
-	if count != (len(response.Data) - 1) {
-		err = ErrResponseSize
+	length := len(response.Data) - 1
+	if count != length {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", length, count)
 		return
 	}
 	results = response.Data[1:]
@@ -83,8 +86,9 @@ func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte
 		return
 	}
 	count := int(response.Data[0])
-	if count != (len(response.Data) - 1) {
-		err = ErrResponseSize
+	length := len(response.Data) - 1
+	if count != length {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", length, count)
 		return
 	}
 	results = response.Data[1:]
@@ -109,8 +113,9 @@ func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, 
 		return
 	}
 	count := int(response.Data[0])
-	if count != (len(response.Data) - 1) {
-		err = ErrResponseSize
+	length := len(response.Data) - 1
+	if count != length {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", length, count)
 		return
 	}
 	results = response.Data[1:]
@@ -128,7 +133,7 @@ func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, 
 func (mb *client) WriteSingleCoil(address, value uint16) (results []byte, err error) {
 	// The requested ON/OFF state can only be 0xFF00 and 0x0000
 	if value != 0xFF00 && value != 0x0000 {
-		err = ErrBadRequest
+		err = fmt.Errorf("modbus: state must be either 0xFF00 (ON) or 0x0000 (OFF)")
 		return
 	}
 	request := ProtocolDataUnit{
@@ -141,14 +146,20 @@ func (mb *client) WriteSingleCoil(address, value uint16) (results []byte, err er
 	}
 	// Fixed response length
 	if len(response.Data) != 4 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 4)
 		return
 	}
-	if address != binary.BigEndian.Uint16(response.Data) {
-		err = ErrResponse
+	respValue := binary.BigEndian.Uint16(response.Data)
+	if address != respValue {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
 		return
 	}
 	results = response.Data[2:]
+	respValue = binary.BigEndian.Uint16(results)
+	if value != respValue {
+		err = fmt.Errorf("modbus: response value '%v' does not match request '%v'", respValue, value)
+		return
+	}
 	return
 }
 
@@ -171,14 +182,20 @@ func (mb *client) WriteSingleRegister(address, value uint16) (results []byte, er
 	}
 	// Fixed response length
 	if len(response.Data) != 4 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 4)
 		return
 	}
-	if address != binary.BigEndian.Uint16(response.Data) {
-		err = ErrResponse
+	respValue := binary.BigEndian.Uint16(response.Data)
+	if address != respValue {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
 		return
 	}
 	results = response.Data[2:]
+	respValue = binary.BigEndian.Uint16(results)
+	if value != respValue {
+		err = fmt.Errorf("modbus: response value '%v' does not match request '%v'", respValue, value)
+		return
+	}
 	return
 }
 
@@ -203,14 +220,20 @@ func (mb *client) WriteMultipleCoils(address, quantity uint16, value []byte) (re
 	}
 	// Fixed response length
 	if len(response.Data) != 4 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 4)
 		return
 	}
-	if address != binary.BigEndian.Uint16(response.Data) {
-		err = ErrResponse
+	respValue := binary.BigEndian.Uint16(response.Data)
+	if address != respValue {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
 		return
 	}
 	results = response.Data[2:]
+	respValue = binary.BigEndian.Uint16(results)
+	if quantity != respValue {
+		err = fmt.Errorf("modbus: response quantity '%v' does not match request '%v'", respValue, quantity)
+		return
+	}
 	return
 }
 
@@ -235,14 +258,20 @@ func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte)
 	}
 	// Fixed response length
 	if len(response.Data) != 4 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 4)
 		return
 	}
-	if address != binary.BigEndian.Uint16(response.Data) {
-		err = ErrResponse
+	respValue := binary.BigEndian.Uint16(response.Data)
+	if address != respValue {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
 		return
 	}
 	results = response.Data[2:]
+	respValue = binary.BigEndian.Uint16(results)
+	if quantity != respValue {
+		err = fmt.Errorf("modbus: response quantity '%v' does not match request '%v'", respValue, quantity)
+		return
+	}
 	return
 }
 
@@ -267,19 +296,22 @@ func (mb *client) MaskWriteRegister(address, andMask, orMask uint16) (results []
 	}
 	// Fixed response length
 	if len(response.Data) != 6 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), 6)
 		return
 	}
-	if address != binary.BigEndian.Uint16(response.Data) {
-		err = ErrResponse
+	respValue := binary.BigEndian.Uint16(response.Data)
+	if address != respValue {
+		err = fmt.Errorf("modbus: response address '%v' does not match request '%v'", respValue, address)
 		return
 	}
-	if andMask != binary.BigEndian.Uint16(response.Data[2:]) {
-		err = ErrResponse
+	respValue = binary.BigEndian.Uint16(response.Data[2:])
+	if andMask != respValue {
+		err = fmt.Errorf("modbus: response AND-mask '%v' does not match request '%v'", respValue, andMask)
 		return
 	}
-	if orMask != binary.BigEndian.Uint16(response.Data[4:]) {
-		err = ErrResponse
+	respValue = binary.BigEndian.Uint16(response.Data[4:])
+	if orMask != respValue {
+		err = fmt.Errorf("modbus: response OR-mask '%v' does not match request '%v'", respValue, orMask)
 		return
 	}
 	results = response.Data[2:]
@@ -309,7 +341,7 @@ func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAdd
 	}
 	count := int(response.Data[0])
 	if count != (len(response.Data) - 1) {
-		err = ErrResponse
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data) - 1, count)
 		return
 	}
 	results = response.Data[1:]
@@ -337,7 +369,7 @@ func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, e
 	}
 	if response.Data == nil || len(response.Data) == 0 {
 		// Empty response
-		err = ErrResponse
+		err = fmt.Errorf("modbus: response data is empty")
 		return
 	}
 	return

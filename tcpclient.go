@@ -6,9 +6,9 @@ package modbus
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"net"
 	"time"
+	"fmt"
 )
 
 const (
@@ -70,7 +70,7 @@ func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error
 		return
 	}
 	if n != len(pdu.Data) {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: encoded pdu size '%v' does not match expected '%v'", len(pdu.Data), n)
 		return
 	}
 	adu = buf.Bytes()
@@ -91,14 +91,14 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 	}
 	// Not thread safe yet
 	if transactionId != mb.transactionId {
-		err = ErrTransactionId
+		err = fmt.Errorf("modbus: adu transaction id '%v' does not match request '%v'", transactionId, mb.transactionId)
 		return
 	}
 	if err = binary.Read(buf, binary.BigEndian, &protocolId); err != nil {
 		return
 	}
 	if protocolId != TcpProtocolIdentifier {
-		err = ErrTransactionId
+		err = fmt.Errorf("modbus: adu protocol id '%v' does not match request '%v'", protocolId, TcpProtocolIdentifier)
 		return
 	}
 	if err = binary.Read(buf, binary.BigEndian, &length); err != nil {
@@ -108,12 +108,12 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 		return
 	}
 	if unitId != mb.unitId {
-		err = ErrTransactionId
+		err = fmt.Errorf("modbus: adu unit id '%v' does not match request '%v'", unitId, mb.unitId)
 		return
 	}
 	pduLength := buf.Len()
 	if pduLength == 0 || pduLength != int(length-1) {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: adu length '%v' does not match pdu data '%v'", length-1, pduLength)
 		return
 	}
 	pdu = &ProtocolDataUnit{}
@@ -126,7 +126,7 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 		return
 	}
 	if n != pduLength-1 {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: pdu data size '%v' does not match expected '%v'", n, pduLength-1)
 		return
 	}
 	return
@@ -151,25 +151,23 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		return
 	}
 	if n != len(aduRequest) {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: sent adu length '%v' does not match expected '%v'", n, len(aduRequest))
 		// TODO: flush
 		return
 	}
-	fmt.Printf("%v\n", aduRequest)
 	// Read header first
 	data := [TcpMaxADULength]byte{}
 	if n, err = conn.Read(data[:TcpHeaderLength]); err != nil {
-		fmt.Printf("%v %v %v\n", data, n, err)
 		return
 	}
 	if n != TcpHeaderLength {
-		err = ErrResponseSize
+		err = fmt.Errorf("modbus: response header length '%v' does not match expected '%v'", n, TcpHeaderLength)
 		return
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
 	length := int(binary.BigEndian.Uint16(data[4:]))
 	if length <= 0 {
-		err = ErrResponse
+		err = fmt.Errorf("modbus: response header length '%v' must not be zero", length)
 		return
 	}
 	// Skip unit id
