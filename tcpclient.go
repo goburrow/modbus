@@ -41,6 +41,7 @@ type TcpEncodeDecoder struct {
 	// For synchronization between messages of server & client
 	// TODO put in a context for the sake of thread-safe
 	transactionId uint16
+	// FIXME unit id must be 0xFF
 	UnitId        byte
 }
 
