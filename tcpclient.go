@@ -6,9 +6,10 @@ package modbus
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"log"
 	"net"
 	"time"
-	"fmt"
 )
 
 const (
@@ -20,11 +21,19 @@ const (
 	TcpMaxADULength = 260
 )
 
-func TcpClient(address string) Client {
-	encodeDecoder := &TcpEncodeDecoder{}
-	transporter := &TcpTransporter{address: address}
+type TcpClientHandler struct {
+	TcpEncodeDecoder
+	TcpTransporter
+}
 
-	return &client{encoder: encodeDecoder, decoder: encodeDecoder, transporter: transporter}
+func TcpClient(address string) Client {
+	handler := &TcpClientHandler{}
+	handler.Address = address
+	return TcpClientWithHandler(handler)
+}
+
+func TcpClientWithHandler(handler *TcpClientHandler) Client {
+	return &client{encoder: handler, decoder: handler, transporter: handler}
 }
 
 // Implements Encoder and Decoder interface
@@ -134,18 +143,22 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 
 // Implements Transporter interface
 type TcpTransporter struct {
-	address string
-	timeout time.Duration
+	Address string
+	Timeout time.Duration
+	Logger  *log.Logger
 }
 
 func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	dialer := net.Dialer{Timeout: mb.timeout}
-	conn, err := dialer.Dial("tcp", mb.address)
+	dialer := net.Dialer{Timeout: mb.Timeout}
+	conn, err := dialer.Dial("tcp", mb.Address)
 	if err != nil {
 		return
 	}
 	defer conn.Close()
 
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+	}
 	var n int
 	if n, err = conn.Write(aduRequest); err != nil {
 		return
@@ -159,6 +172,9 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	data := [TcpMaxADULength]byte{}
 	if n, err = conn.Read(data[:TcpHeaderLength]); err != nil {
 		return
+	}
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: received header %v\n", data[:TcpHeaderLength])
 	}
 	if n != TcpHeaderLength {
 		err = fmt.Errorf("modbus: response header length '%v' does not match expected '%v'", n, TcpHeaderLength)
@@ -180,5 +196,8 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		idx += n
 	}
 	aduResponse = data[:idx]
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: received %v\n", aduResponse)
+	}
 	return
 }

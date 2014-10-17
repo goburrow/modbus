@@ -5,6 +5,8 @@ package modbus
 
 import (
 	"testing"
+	"os"
+	"log"
 )
 
 const (
@@ -158,7 +160,11 @@ func TestReadWriteMultipleRegisters(t *testing.T) {
 }
 
 func TestReadFIFOQueue(t *testing.T) {
-	client := TcpClient(testTcpServer)
+	handler := &TcpClientHandler{}
+	handler.Address = testTcpServer
+	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
+
+	client := TcpClientWithHandler(handler)
 	// Read queue starting at the pointer register 1246
 	address := uint16(0x04DE)
 	results, err := client.ReadFIFOQueue(address)
