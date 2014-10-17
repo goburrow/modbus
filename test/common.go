@@ -25,6 +25,6 @@ func AssertEquals(t *testing.T, expected, actual interface{}) {
 	if expected != actual {
 		t.Logf("%s:%d: Expected: %+v (%T), actual: %+v (%T)", file, line,
 			expected, expected, actual, actual)
-		t.Fail()
+		t.FailNow()
 	}
 }

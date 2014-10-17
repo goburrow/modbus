@@ -14,7 +14,7 @@ func ClientTestReadCoils(t *testing.T, client modbus.Client) {
 	quantity := uint16(0x0013)
 	results, err := client.ReadCoils(address, quantity)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 3, len(results))
 }
@@ -25,7 +25,7 @@ func ClientTestDiscreteInputs(t *testing.T, client modbus.Client) {
 	quantity := uint16(0x0016)
 	results, err := client.ReadDiscreteInputs(address, quantity)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 3, len(results))
 }
@@ -36,7 +36,7 @@ func ClientTestReadHoldingRegisters(t *testing.T, client modbus.Client) {
 	quantity := uint16(0x0003)
 	results, err := client.ReadHoldingRegisters(address, quantity)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 6, len(results))
 }
@@ -47,7 +47,7 @@ func ClientTestReadInputRegisters(t *testing.T, client modbus.Client) {
 	quantity := uint16(0x0001)
 	results, err := client.ReadInputRegisters(address, quantity)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 2, len(results))
 }
@@ -58,7 +58,7 @@ func ClientTestWriteSingleCoil(t *testing.T, client modbus.Client) {
 	value := uint16(0xFF00)
 	results, err := client.WriteSingleCoil(address, value)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 2, len(results))
 }
@@ -69,7 +69,7 @@ func ClientTestWriteSingleRegister(t *testing.T, client modbus.Client) {
 	value := uint16(0x0003)
 	results, err := client.WriteSingleRegister(address, value)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 2, len(results))
 }
@@ -81,7 +81,7 @@ func ClientTestWriteMultipleCoils(t *testing.T, client modbus.Client) {
 	values := []byte{0xCD, 0x01}
 	results, err := client.WriteMultipleCoils(address, quantity, values)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 2, len(results))
 }
@@ -93,7 +93,7 @@ func ClientTestWriteMultipleRegisters(t *testing.T, client modbus.Client) {
 	values := []byte{0x00, 0x0A, 0x01, 0x02}
 	results, err := client.WriteMultipleRegisters(address, quantity, values)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 2, len(results))
 }
@@ -105,7 +105,7 @@ func ClientTestMaskWriteRegisters(t *testing.T, client modbus.Client) {
 	orMask := uint16(0x0025)
 	results, err := client.MaskWriteRegister(address, andMask, orMask)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 4, len(results))
 }
@@ -119,7 +119,7 @@ func ClientTestReadWriteMultipleRegisters(t *testing.T, client modbus.Client) {
 	values := []byte{0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF}
 	results, err := client.ReadWriteMultipleRegisters(address, quantity, writeAddress, writeQuantity, values)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	AssertEquals(t, 12, len(results))
 }
