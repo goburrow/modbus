@@ -24,6 +24,7 @@ Bit access:
 Supported formats
 -----------------
 *   TCP
+*   Serial (RTU, ASCII) - in progress
 
 References
 ----------
