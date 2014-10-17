@@ -156,3 +156,20 @@ func TestReadWriteMultipleRegisters(t *testing.T) {
 		t.Errorf("expected: %v, actual: %v", 12, len(results))
 	}
 }
+
+func TestReadFIFOQueue(t *testing.T) {
+	client := TcpClient(testTcpServer)
+	// Read queue starting at the pointer register 1246
+	address := uint16(0x04DE)
+	results, err := client.ReadFIFOQueue(address)
+	// Server not implemented
+	if err != nil {
+		if "modbus: exception '1', function '152'" != err.Error() {
+			t.Error(err)
+		}
+	} else {
+		if 0 == len(results) {
+			t.Errorf("expected: !, actual: %v", 0, len(results))
+		}
+	}
+}

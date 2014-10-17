@@ -21,6 +21,7 @@ const (
 	FuncCodeWriteMultipleRegisters     = 16
 	FuncCodeReadWriteMultipleRegisters = 23
 	FuncCodeMaskWriteRegister          = 22
+	FuncCodeReadFIFOQueue              = 24
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 )
 
 func (e *ModbusError) Error() string {
-	return fmt.Sprintf("modbus exception: %v, function: %v", e.ExceptionCode, e.FunctionCode)
+	return fmt.Sprintf("modbus: exception '%v', function '%v'", e.ExceptionCode, e.FunctionCode)
 }
 
 // PDU

@@ -380,6 +380,44 @@ func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAdd
 	return
 }
 
+// Request:
+//  Function code         : 1 byte (0x18)
+//  FIFO pointer address  : 2 bytes
+// Response:
+//  Function code         : 1 byte (0x18)
+//  Byte count            : 2 bytes
+//  FIFO count            : 2 bytes
+//  FIFO count            : 2 bytes (<=31)
+//  FIFO value register   : Nx2 bytes
+func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeReadFIFOQueue,
+		Data:         dataBlock(address),
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	if len(response.Data) < 4 {
+		err = fmt.Errorf("modbus: response data size '%v' is less than expected '%v'", len(response.Data), 4)
+		return
+	}
+	count := int(binary.BigEndian.Uint16(response.Data))
+	if count != (len(response.Data) - 1) {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data) - 1, count)
+		return
+	}
+	count = int(binary.BigEndian.Uint16(response.Data[2:]))
+	if count > 31 {
+		err = fmt.Errorf("modbus: fifo count '%v' is greater than expected '%v'", count, 31)
+		return
+	}
+	results = response.Data[4:]
+	return
+}
+
+// Helpers
+
 // Send a request and check possible exception in the response
 func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, err error) {
 	aduRequest, err := mb.encoder.Encode(request)

@@ -35,4 +35,6 @@ type Client interface {
 	ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error)
 	// Returns AND-mask + OR-mask
 	MaskWriteRegister(address, andMask, orMask uint16) (results []byte, err error)
+	// Returns FIFO value register
+	ReadFIFOQueue(address uint16) (results []byte, err error)
 }
