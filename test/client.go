@@ -1,20 +1,14 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
 // of the BSD license.  See the LICENSE file for details.
-package modbus
+package test
 
 import (
 	"testing"
-	"os"
-	"log"
+	"github.com/vietnq/modbus"
 )
 
-const (
-	testTcpServer = "localhost:5020"
-)
-
-func TestReadCoils(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestReadCoils(t *testing.T, client modbus.Client) {
 	// Read discrete outputs 20-38:
 	address := uint16(0x0013)
 	quantity := uint16(0x0013)
@@ -22,13 +16,10 @@ func TestReadCoils(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 3 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 3, len(results))
-	}
+	AssertEquals(t, 3, len(results))
 }
 
-func TestDiscreteInputs(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestDiscreteInputs(t *testing.T, client modbus.Client) {
 	// Read discrete inputs 197-218
 	address := uint16(0x00C4)
 	quantity := uint16(0x0016)
@@ -36,13 +27,10 @@ func TestDiscreteInputs(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 3 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 3, len(results))
-	}
+	AssertEquals(t, 3, len(results))
 }
 
-func TestReadHoldingRegisters(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestReadHoldingRegisters(t *testing.T, client modbus.Client) {
 	// Read registers 108-110
 	address := uint16(0x006B)
 	quantity := uint16(0x0003)
@@ -50,13 +38,10 @@ func TestReadHoldingRegisters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 6 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 6, len(results))
-	}
+	AssertEquals(t, 6, len(results))
 }
 
-func TestReadInputRegisters(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestReadInputRegisters(t *testing.T, client modbus.Client) {
 	// Read input register 9
 	address := uint16(0x0008)
 	quantity := uint16(0x0001)
@@ -64,13 +49,10 @@ func TestReadInputRegisters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 2 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 2, len(results))
-	}
+	AssertEquals(t, 2, len(results))
 }
 
-func TestWriteSingleCoil(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestWriteSingleCoil(t *testing.T, client modbus.Client) {
 	// Write coil 173 ON
 	address := uint16(0x00AC)
 	value := uint16(0xFF00)
@@ -78,13 +60,10 @@ func TestWriteSingleCoil(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 2 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 2, len(results))
-	}
+	AssertEquals(t, 2, len(results))
 }
 
-func TestWriteSingleRegister(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestWriteSingleRegister(t *testing.T, client modbus.Client) {
 	// Write register 2 to 00 03 hex
 	address := uint16(0x0001)
 	value := uint16(0x0003)
@@ -92,13 +71,10 @@ func TestWriteSingleRegister(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 2 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 2, len(results))
-	}
+	AssertEquals(t, 2, len(results))
 }
 
-func TestWriteMultipleCoils(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestWriteMultipleCoils(t *testing.T, client modbus.Client) {
 	// Write a series of 10 coils starting at coil 20
 	address := uint16(0x0013)
 	quantity := uint16(0x000A)
@@ -107,13 +83,10 @@ func TestWriteMultipleCoils(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 2 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 2, len(results))
-	}
+	AssertEquals(t, 2, len(results))
 }
 
-func TestWriteMultipleRegisters(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestWriteMultipleRegisters(t *testing.T, client modbus.Client) {
 	// Write two registers starting at 2 to 00 0A and 01 02 hex
 	address := uint16(0x0001)
 	quantity := uint16(0x0002)
@@ -122,13 +95,10 @@ func TestWriteMultipleRegisters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 2 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 2, len(results))
-	}
+	AssertEquals(t, 2, len(results))
 }
 
-func TestMaskWriteRegisters(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestMaskWriteRegisters(t *testing.T, client modbus.Client) {
 	// Mask write to register 5
 	address := uint16(0x0004)
 	andMask := uint16(0x00F2)
@@ -137,13 +107,10 @@ func TestMaskWriteRegisters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 4 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 4, len(results))
-	}
+	AssertEquals(t, 4, len(results))
 }
 
-func TestReadWriteMultipleRegisters(t *testing.T) {
-	client := TcpClient(testTcpServer)
+func ClientTestReadWriteMultipleRegisters(t *testing.T, client modbus.Client) {
 	// read six registers starting at register 4, and to write three registers starting at register 15
 	address := uint16(0x0003)
 	quantity := uint16(0x0006)
@@ -154,28 +121,17 @@ func TestReadWriteMultipleRegisters(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if 12 != len(results) {
-		t.Errorf("expected: %v, actual: %v", 12, len(results))
-	}
+	AssertEquals(t, 12, len(results))
 }
 
-func TestReadFIFOQueue(t *testing.T) {
-	handler := &TcpClientHandler{}
-	handler.ConnectString = testTcpServer
-	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
-
-	client := TcpClientWithHandler(handler)
+func ClientTestReadFIFOQueue(t *testing.T, client modbus.Client) {
 	// Read queue starting at the pointer register 1246
 	address := uint16(0x04DE)
 	results, err := client.ReadFIFOQueue(address)
 	// Server not implemented
 	if err != nil {
-		if "modbus: exception '1', function '152'" != err.Error() {
-			t.Error(err)
-		}
+		AssertEquals(t, "modbus: exception '1', function '152'", err.Error())
 	} else {
-		if 0 == len(results) {
-			t.Errorf("expected: !, actual: %v", 0, len(results))
-		}
+		AssertEquals(t, 0, len(results))
 	}
 }

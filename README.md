@@ -25,6 +25,6 @@ Supported formats
 -----------------
 *   TCP
 
-Documents
----------
+References
+----------
 -   [Modbus Specifications and Implementation Guides](http://www.modbus.org/specs.php)
