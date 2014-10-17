@@ -26,9 +26,9 @@ type TcpClientHandler struct {
 	TcpTransporter
 }
 
-func TcpClient(address string) Client {
+func TcpClient(connectString string) Client {
 	handler := &TcpClientHandler{}
-	handler.Address = address
+	handler.ConnectString = connectString
 	return TcpClientWithHandler(handler)
 }
 
@@ -143,14 +143,14 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 
 // Implements Transporter interface
 type TcpTransporter struct {
-	Address string
-	Timeout time.Duration
-	Logger  *log.Logger
+	ConnectString string
+	Timeout       time.Duration
+	Logger        *log.Logger
 }
 
 func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
 	dialer := net.Dialer{Timeout: mb.Timeout}
-	conn, err := dialer.Dial("tcp", mb.Address)
+	conn, err := dialer.Dial("tcp", mb.ConnectString)
 	if err != nil {
 		return
 	}

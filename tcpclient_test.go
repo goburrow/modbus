@@ -161,7 +161,7 @@ func TestReadWriteMultipleRegisters(t *testing.T) {
 
 func TestReadFIFOQueue(t *testing.T) {
 	handler := &TcpClientHandler{}
-	handler.Address = testTcpServer
+	handler.ConnectString = testTcpServer
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 
 	client := TcpClientWithHandler(handler)
