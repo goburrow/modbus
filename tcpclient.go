@@ -41,7 +41,7 @@ type TcpEncodeDecoder struct {
 	// For synchronization between messages of server & client
 	// TODO put in a context for the sake of thread-safe
 	transactionId uint16
-	unitId        byte
+	UnitId        byte
 }
 
 // Adds modbus application protocol header:
@@ -67,7 +67,7 @@ func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error
 		return
 	}
 	// Unit identifier
-	if err = binary.Write(&buf, binary.BigEndian, mb.unitId); err != nil {
+	if err = binary.Write(&buf, binary.BigEndian, mb.UnitId); err != nil {
 		return
 	}
 	// PDU
@@ -116,8 +116,8 @@ func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error
 	if err = binary.Read(buf, binary.BigEndian, &unitId); err != nil {
 		return
 	}
-	if unitId != mb.unitId {
-		err = fmt.Errorf("modbus: adu unit id '%v' does not match request '%v'", unitId, mb.unitId)
+	if unitId != mb.UnitId {
+		err = fmt.Errorf("modbus: adu unit id '%v' does not match request '%v'", unitId, mb.UnitId)
 		return
 	}
 	pduLength := buf.Len()
