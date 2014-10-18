@@ -4,9 +4,9 @@
 package test
 
 import (
-	"testing"
 	"runtime"
 	"strings"
+	"testing"
 )
 
 func AssertEquals(t *testing.T, expected, actual interface{}) {

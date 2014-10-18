@@ -4,10 +4,10 @@
 package test
 
 import (
-	"testing"
-	"os"
+	"github.com/goburrow/modbus"
 	"log"
-	"github.com/vietnq/modbus"
+	"os"
+	"testing"
 )
 
 const (
