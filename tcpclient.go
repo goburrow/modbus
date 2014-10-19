@@ -150,15 +150,25 @@ type TcpTransporter struct {
 	// Transmission logger
 	Logger *log.Logger
 
+	// TCP connection
 	conn net.Conn
 }
 
 func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if err = mb.connect(); err != nil {
-		return
-	}
-	defer mb.close()
+	var data [TcpMaxADULength]byte
 
+	if mb.conn != nil {
+		// Flush current data and check if the connection is alive
+		if err = mb.flush(data[:]); err != nil {
+			return
+		}
+	} else {
+		// Establish a new connection and close it when complete
+		if err = mb.Connect(); err != nil {
+			return
+		}
+		defer mb.Close()
+	}
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
 	}
@@ -166,7 +176,6 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		return
 	}
 	// Read header first
-	var data [TcpMaxADULength]byte
 	var n int
 	if n, err = mb.read(data[:TcpHeaderLength]); err != nil {
 		return
@@ -204,18 +213,16 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	return
 }
 
-// TODO: keep connection alive
-
-func (mb *TcpTransporter) connect() (err error) {
-	if mb.conn != nil {
-		return
-	}
+// Connects to the address in ConnectString
+// Connect and Close are exported so that multiple requests can be done with one session
+func (mb *TcpTransporter) Connect() (err error) {
 	dialer := net.Dialer{Timeout: mb.Timeout}
 	mb.conn, err = dialer.Dial("tcp", mb.ConnectString)
 	return
 }
 
-func (mb *TcpTransporter) close() (err error) {
+// Closes current connection
+func (mb *TcpTransporter) Close() (err error) {
 	if mb.conn != nil {
 		err = mb.conn.Close()
 		mb.conn = nil
@@ -223,11 +230,13 @@ func (mb *TcpTransporter) close() (err error) {
 	return
 }
 
-// These methods must only be called after connect()
+// These methods must only be called after Connect()
 func (mb *TcpTransporter) write(b []byte) (err error) {
 	var n int
 	if mb.Timeout > 0 {
-		mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout))
+		if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
+			return
+		}
 	}
 	if n, err = mb.conn.Write(b); err != nil {
 		return
@@ -242,14 +251,29 @@ func (mb *TcpTransporter) write(b []byte) (err error) {
 
 func (mb *TcpTransporter) read(b []byte) (n int, err error) {
 	if mb.Timeout > 0 {
-		mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout))
+		if err = mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout)); err != nil {
+			return
+		}
 	}
 	n, err = mb.conn.Read(b)
 	return
 }
 
+// Flushes pending data in the connection,
+// returns io.EOF if connection is closed
 func (mb *TcpTransporter) flush(b []byte) (err error) {
-	mb.conn.SetReadDeadline(time.Now())
-	_, err = mb.conn.Read(b)
+	if err = mb.conn.SetReadDeadline(time.Now()); err != nil {
+		return
+	}
+	// Reset timeout setting
+	if mb.Timeout <= 0 {
+		defer mb.conn.SetReadDeadline(time.Time{})
+	}
+	if _, err = mb.conn.Read(b); err != nil {
+		// Ignore timeout error
+		if netError, ok := err.(net.Error); ok && netError.Timeout() {
+			err = nil
+		}
+	}
 	return
 }

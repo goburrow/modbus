@@ -19,7 +19,7 @@ func TestTcpClientReadCoils(t *testing.T) {
 	ClientTestReadCoils(t, client)
 }
 
-func TestTcpClientDiscreteInputs(t *testing.T) {
+func TestTcpClientReadDiscreteInputs(t *testing.T) {
 	client := modbus.TcpClient(testTcpServer)
 	// Read discrete inputs 197-218
 	ClientTestDiscreteInputs(t, client)
@@ -72,4 +72,27 @@ func TestTcpClientReadFIFOQueue(t *testing.T) {
 
 	client := modbus.TcpClientWithHandler(handler)
 	ClientTestReadFIFOQueue(t, client)
+}
+
+func TestTcpClientAdvancedUsage(t *testing.T) {
+	var handler modbus.TcpClientHandler
+	handler.ConnectString = testTcpServer
+	handler.UnitId = 0x01
+	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
+	handler.Connect()
+	defer handler.Close()
+
+	client := modbus.TcpClientWithHandler(&handler)
+	results, err := client.ReadDiscreteInputs(15, 2)
+	if err != nil || results == nil {
+		t.Fatal(err, results)
+	}
+	results, err = client.WriteMultipleRegisters(1, 2, []byte{0, 3, 0, 4})
+	if err != nil || results == nil {
+		t.Fatal(err, results)
+	}
+	results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
+	if err != nil || results == nil {
+		t.Fatal(err, results)
+	}
 }
