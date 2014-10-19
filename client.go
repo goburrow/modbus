@@ -23,7 +23,7 @@ type client struct {
 //  Byte count            : 1 byte
 //  Coil status           : N* bytes (=N or N+1)
 func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error) {
-	if (quantity < 1 || quantity > 2000) {
+	if quantity < 1 || quantity > 2000 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 2000)
 		return
 	}
@@ -54,7 +54,7 @@ func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error
 //  Byte count            : 1 byte
 //  Input status          : N* bytes (=N or N+1)
 func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
-	if (quantity < 1 || quantity > 2000) {
+	if quantity < 1 || quantity > 2000 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 2000)
 		return
 	}
@@ -85,7 +85,7 @@ func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, 
 //  Byte count            : 1 byte
 //  Register value        : Nx2 bytes
 func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
-	if (quantity < 1 || quantity > 125) {
+	if quantity < 1 || quantity > 125 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 125)
 		return
 	}
@@ -116,7 +116,7 @@ func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte
 //  Byte count            : 1 byte
 //  Input registers       : N bytes
 func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
-	if (quantity < 1 || quantity > 125) {
+	if quantity < 1 || quantity > 125 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 125)
 		return
 	}
@@ -226,7 +226,7 @@ func (mb *client) WriteSingleRegister(address, value uint16) (results []byte, er
 //  Starting address      : 2 bytes
 //  Quantity of outputs   : 2 bytes
 func (mb *client) WriteMultipleCoils(address, quantity uint16, value []byte) (results []byte, err error) {
-	if (quantity < 1 || quantity > 1968) {
+	if quantity < 1 || quantity > 1968 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 1968)
 		return
 	}
@@ -268,7 +268,7 @@ func (mb *client) WriteMultipleCoils(address, quantity uint16, value []byte) (re
 //  Starting address      : 2 bytes
 //  Quantity of registers : 2 bytes
 func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error) {
-	if (quantity < 1 || quantity > 123) {
+	if quantity < 1 || quantity > 123 {
 		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 123)
 		return
 	}
@@ -355,11 +355,11 @@ func (mb *client) MaskWriteRegister(address, andMask, orMask uint16) (results []
 //  Byte count            : 2 bytes
 //  Read registers value  : Nx2 bytes
 func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error) {
-	if (readQuantity < 1 || readQuantity > 125) {
+	if readQuantity < 1 || readQuantity > 125 {
 		err = fmt.Errorf("modbus: quantity to read '%v' must be between '%v' and '%v',", readQuantity, 1, 125)
 		return
 	}
-	if (writeQuantity < 1 || writeQuantity > 121) {
+	if writeQuantity < 1 || writeQuantity > 121 {
 		err = fmt.Errorf("modbus: quantity to write '%v' must be between '%v' and '%v',", writeQuantity, 1, 121)
 		return
 	}
@@ -373,7 +373,7 @@ func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAdd
 	}
 	count := int(response.Data[0])
 	if count != (len(response.Data) - 1) {
-		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data) - 1, count)
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data)-1, count)
 		return
 	}
 	results = response.Data[1:]
@@ -404,7 +404,7 @@ func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
 	}
 	count := int(binary.BigEndian.Uint16(response.Data))
 	if count != (len(response.Data) - 1) {
-		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data) - 1, count)
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", len(response.Data)-1, count)
 		return
 	}
 	count = int(binary.BigEndian.Uint16(response.Data[2:]))
@@ -456,7 +456,7 @@ func dataBlock(value ...uint16) []byte {
 
 // Creates a sequence of uint16 data and append the suffix plus its length
 func dataBlockSuffix(suffix []byte, value ...uint16) []byte {
-	length := 2*len(value)
+	length := 2 * len(value)
 	data := make([]byte, length+1+len(suffix))
 	for i, v := range value {
 		binary.BigEndian.PutUint16(data[i*2:], v)
