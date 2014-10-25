@@ -7,17 +7,39 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"time"
 )
 
 const (
-	ASCIIStart = ":"
-	ASCIIEnd   = "\r\n"
+	asciiStart = ":"
+	asciiEnd   = "\r\n"
+	asciiMinLength = 3
+	asciiMaxLength = 513
+
+	asciiTimeoutMillis = 5000
+	asciiSleepMillis = 1000
 
 	hexTable = "0123456789ABCDEF"
 )
 
+type ASCIIClientHandler struct {
+	asciiEncodeDecoder
+	asciiSerialTransporter
+}
+
+func ASCIIClient(device string) Client {
+	handler := &ASCIIClientHandler{}
+	handler.Device = device
+	return ASCIIClientWithHandler(handler)
+}
+
+func ASCIIClientWithHandler(handler *ASCIIClientHandler) Client {
+	return &client{encoder: handler, decoder: handler, transporter: handler}
+}
+
 // Implements Encoder and Decoder interface
-type ASCIIEncodeDecoder struct {
+type asciiEncodeDecoder struct {
 	SlaveId byte
 }
 
@@ -28,10 +50,10 @@ type ASCIIEncodeDecoder struct {
 //  Data            : 0 up to 2x252 chars
 //  LRC             : 2 chars
 //  End             : 2 chars
-func (mb *ASCIIEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
+func (mb *asciiEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	var buf bytes.Buffer
 
-	if _, err = buf.WriteString(ASCIIStart); err != nil {
+	if _, err = buf.WriteString(asciiStart); err != nil {
 		return
 	}
 	if err = writeHex(&buf, []byte{mb.SlaveId, pdu.FunctionCode}); err != nil {
@@ -46,14 +68,14 @@ func (mb *ASCIIEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err err
 	if err = writeHex(&buf, []byte{lrc.value()}); err != nil {
 		return
 	}
-	if _, err = buf.WriteString(ASCIIEnd); err != nil {
+	if _, err = buf.WriteString(asciiEnd); err != nil {
 		return
 	}
 	adu = buf.Bytes()
 	return
 }
 
-func (mb *ASCIIEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
+func (mb *asciiEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	var (
 		value byte
 	)
@@ -87,8 +109,6 @@ func (mb *ASCIIEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err err
 	if _, err = hex.Decode(pdu.Data, data); err != nil {
 		return
 	}
-	fmt.Printf("%v", data)
-
 	// LRC
 	if value, err = readHex(adu[length-4:]); err != nil {
 		return
@@ -99,6 +119,77 @@ func (mb *ASCIIEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err err
 		err = fmt.Errorf("modbus: adu lrc '%v' does not match expected '%v'", value, lrc.value())
 		return
 	}
+	return
+}
+
+// asciiSerialTransporter implements Transporter interface
+type asciiSerialTransporter struct {
+	// Serial port configuration
+	serialConfig
+	// Read timeout
+	Timeout time.Duration
+	Logger  *log.Logger
+
+	// Serial controller
+	serial serial
+}
+
+func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
+	if mb.serial.IsConnected() {
+		// flush current data pending in serial port
+	} else {
+		if err = mb.Connect(); err != nil {
+			return
+		}
+	}
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+	}
+	var n int
+	if n, err = mb.serial.Write(aduRequest); err != nil {
+		return
+	}
+	// TODO: use channel to handle timeout
+	// TODO: use syscall.select to wait for data arrived
+	var data [asciiMaxLength]byte
+	length := 0
+	deadline := time.Now().Add(mb.Timeout)
+
+	for {
+		if n, err = mb.serial.Read(data[length:]); err != nil {
+			return
+		}
+		length += n
+		if length >= asciiMaxLength {
+			break
+		}
+		// Expect end of frame in the data received
+		if length > asciiMinLength {
+			if string(data[length-len(asciiEnd):]) == asciiEnd {
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			err = fmt.Errorf("modbus: Read timeout after %s", mb.Timeout.String())
+			return
+		}
+		time.Sleep(asciiSleepMillis * time.Millisecond)
+	}
+	aduResponse = data[:length]
+	return
+}
+
+func (mb *asciiSerialTransporter) Connect() (err error) {
+	// timeout is required
+	if mb.Timeout <= 0 {
+		mb.Timeout = asciiTimeoutMillis * time.Millisecond
+	}
+	err = mb.serial.Connect(&mb.serialConfig)
+	return
+}
+
+func (mb *asciiSerialTransporter) Close() (err error) {
+	err = mb.serial.Close()
 	return
 }
 
