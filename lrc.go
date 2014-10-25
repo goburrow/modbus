@@ -1,21 +1,26 @@
+// Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
+// This software may be modified and distributed under the terms
+// of the BSD license.  See the LICENSE file for details.
 package modbus
 
-type LRC struct {
-	sum byte
+// Longitudinal Redundancy Checking
+type lRC struct {
+	sum uint8
 }
 
-func (lrc *LRC) pushByte(b byte) *LRC {
+func (lrc *lRC) pushByte(b byte) *lRC {
 	lrc.sum += b
 	return lrc
 }
 
-func (lrc *LRC) pushBytes(data []byte) *LRC {
+func (lrc *lRC) pushBytes(data []byte) *lRC {
 	for _, b := range data {
 		lrc.pushByte(b)
 	}
 	return lrc
 }
 
-func (lrc *LRC) value() byte {
-	return -lrc.sum
+func (lrc *lRC) value() byte {
+	// Return twos complement
+	return uint8(-int8(lrc.sum))
 }

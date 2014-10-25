@@ -8,7 +8,7 @@ import (
 )
 
 func TestLRC(t *testing.T) {
-	var lrc LRC
+	var lrc lRC
 	lrc.pushByte(0x01).pushByte(0x03)
 	lrc.pushBytes([]byte{0x01, 0x0A})
 
