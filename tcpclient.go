@@ -18,6 +18,8 @@ const (
 	// Modbus Application Protocol
 	tcpHeaderLength = 7
 	tcpMaxLength    = 260
+	// Default TCP timeout is not set
+	tcpTimeoutMillis = 5000
 )
 
 type TCPClientHandler struct {
@@ -208,6 +210,10 @@ func (mb *tcpTransporter) Connect() (err error) {
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: connecting '%v'\n", mb.Address)
 	}
+	// Timeout must be specified
+	if mb.Timeout <= 0 {
+		mb.Timeout = tcpTimeoutMillis * time.Millisecond
+	}
 	dialer := net.Dialer{Timeout: mb.Timeout}
 	mb.conn, err = dialer.Dial("tcp", mb.Address)
 	return
@@ -228,10 +234,8 @@ func (mb *tcpTransporter) Close() (err error) {
 // These methods must only be called after Connect()
 func (mb *tcpTransporter) write(b []byte) (err error) {
 	var n int
-	if mb.Timeout > 0 {
-		if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
-			return
-		}
+	if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
+		return
 	}
 	if n, err = mb.conn.Write(b); err != nil {
 		return
@@ -245,10 +249,8 @@ func (mb *tcpTransporter) write(b []byte) (err error) {
 }
 
 func (mb *tcpTransporter) read(b []byte) (n int, err error) {
-	if mb.Timeout > 0 {
-		if err = mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout)); err != nil {
-			return
-		}
+	if err = mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout)); err != nil {
+		return
 	}
 	n, err = mb.conn.Read(b)
 	return
@@ -260,10 +262,7 @@ func (mb *tcpTransporter) flush(b []byte) (err error) {
 	if err = mb.conn.SetReadDeadline(time.Now()); err != nil {
 		return
 	}
-	// Reset timeout setting
-	if mb.Timeout <= 0 {
-		defer mb.conn.SetReadDeadline(time.Time{})
-	}
+	// Timeout setting will be reset when reading
 	if _, err = mb.conn.Read(b); err != nil {
 		// Ignore timeout error
 		if netError, ok := err.(net.Error); ok && netError.Timeout() {
