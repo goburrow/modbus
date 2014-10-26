@@ -6,9 +6,9 @@ package modbus
 // SerialConfig is common configuration for serial port.
 type serialConfig struct {
 	// Device path (/dev/ttyS0)
-	Device string
-	// Baud rate (default 115200)
-	Baud int
+	Address string
+	// Baud rate (default 19200)
+	BaudRate int
 	// Data bits: 5, 6, 7 or 8 (default 8)
 	CharSize int
 	// Stop bits: 1 or 2 (default 1)

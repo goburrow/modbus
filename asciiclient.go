@@ -27,9 +27,9 @@ type ASCIIClientHandler struct {
 	asciiSerialTransporter
 }
 
-func ASCIIClient(device string) Client {
+func ASCIIClient(address string) Client {
 	handler := &ASCIIClientHandler{}
-	handler.Device = device
+	handler.Address = address
 	return ASCIIClientWithHandler(handler)
 }
 
@@ -202,7 +202,7 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 
 func (mb *asciiSerialTransporter) Connect() (err error) {
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: connecting '%v'\n", mb.serialConfig.Device)
+		mb.Logger.Printf("modbus: connecting '%v'\n", mb.serialConfig.Address)
 	}
 	// Timeout is required
 	if mb.Timeout <= 0 {
@@ -217,7 +217,7 @@ func (mb *asciiSerialTransporter) Connect() (err error) {
 func (mb *asciiSerialTransporter) Close() (err error) {
 	err = mb.serial.Close()
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: closed connection '%v'\n", mb.serialConfig.Device)
+		mb.Logger.Printf("modbus: closed connection '%v'\n", mb.serialConfig.Address)
 	}
 	return
 }

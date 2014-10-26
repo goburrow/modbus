@@ -68,7 +68,7 @@ func TestTCPClientReadWriteMultipleRegisters(t *testing.T) {
 
 func TestTCPClientReadFIFOQueue(t *testing.T) {
 	handler := &modbus.TCPClientHandler{}
-	handler.ConnectString = testTCPServer
+	handler.Address = testTCPServer
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 
 	client := modbus.TCPClientWithHandler(handler)
@@ -77,9 +77,9 @@ func TestTCPClientReadFIFOQueue(t *testing.T) {
 
 func TestTCPClientAdvancedUsage(t *testing.T) {
 	var handler modbus.TCPClientHandler
-	handler.ConnectString = testTCPServer
+	handler.Address = testTCPServer
 	handler.Timeout = 5 * time.Second
-	handler.UnitId = 0x01
+	handler.SlaveId = 0x01
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	handler.Connect()
 	defer handler.Close()

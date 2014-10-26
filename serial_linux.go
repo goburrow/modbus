@@ -77,7 +77,7 @@ func (mb *serial) Connect(config *serialConfig) (err error) {
 	// See man termios(3)
 	// O_NOCTTY: no controlling terminal
 	// O_NDELAY: no data carrier detect
-	mb.file, err = os.OpenFile(config.Device, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666))
+	mb.file, err = os.OpenFile(config.Address, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666))
 	if err != nil {
 		return
 	}
@@ -167,13 +167,13 @@ func newTermios(config *serialConfig) (termios *syscall.Termios, err error) {
 	termios = &syscall.Termios{}
 	var flag uint32
 	// Baud rate
-	if config.Baud == 0 {
+	if config.BaudRate == 0 {
 		// 19200 is the required default
 		flag = syscall.B19200
 	} else {
-		flag = baudRates[config.Baud]
+		flag = baudRates[config.BaudRate]
 		if flag == 0 {
-			err = fmt.Errorf("modbus: Baud rate '%v' is not supported", config.Baud)
+			err = fmt.Errorf("modbus: Baud rate '%v' is not supported", config.BaudRate)
 			return
 		}
 	}

@@ -39,7 +39,7 @@ func TestTCPEncoding(t *testing.T) {
 func TestTCPDecoding(t *testing.T) {
 	packager := tcpPackager{}
 	packager.transactionId = 1
-	packager.UnitId = 17
+	packager.SlaveId = 17
 	adu := []byte{0, 1, 0, 0, 0, 6, 17, 3, 0, 120, 0, 3}
 
 	pdu, err := packager.Decode(adu)

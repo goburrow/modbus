@@ -4,11 +4,12 @@
 package test
 
 import (
-	"testing"
 	"github.com/goburrow/modbus"
 	"log"
 	"os"
+	"testing"
 )
+
 const (
 	testAsciiDevice = "/dev/pts/7"
 )
@@ -20,7 +21,11 @@ func TestASCIIClientReadCoils(t *testing.T) {
 
 func TestASCIIClientAdvancedUsage(t *testing.T) {
 	var handler modbus.ASCIIClientHandler
-	handler.Device = testAsciiDevice
+	handler.Address = testAsciiDevice
+	handler.BaudRate = 19200
+	handler.CharSize = 8
+	handler.Parity = "E"
+	handler.StopBits = 1
 	handler.SlaveId = 17
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	err := handler.Connect()

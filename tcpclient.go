@@ -25,9 +25,9 @@ type TCPClientHandler struct {
 	tcpTransporter
 }
 
-func TCPClient(connectString string) Client {
+func TCPClient(address string) Client {
 	handler := &TCPClientHandler{}
-	handler.ConnectString = connectString
+	handler.Address = address
 	return TCPClientWithHandler(handler)
 }
 
@@ -40,7 +40,7 @@ type tcpPackager struct {
 	// For synchronization between messages of server & client
 	transactionId uint16
 	// Broadcast address is 0
-	UnitId byte
+	SlaveId byte
 }
 
 // Encode adds modbus application protocol header:
@@ -60,13 +60,13 @@ func (mb *tcpPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	if err = binary.Write(&buf, binary.BigEndian, tcpProtocolIdentifier); err != nil {
 		return
 	}
-	// Length = sizeof(UnitId) + sizeof(FunctionCode) + Data
+	// Length = sizeof(SlaveId) + sizeof(FunctionCode) + Data
 	length := uint16(1 + 1 + len(pdu.Data))
 	if err = binary.Write(&buf, binary.BigEndian, length); err != nil {
 		return
 	}
 	// Unit identifier
-	if err = binary.Write(&buf, binary.BigEndian, mb.UnitId); err != nil {
+	if err = binary.Write(&buf, binary.BigEndian, mb.SlaveId); err != nil {
 		return
 	}
 	// PDU
@@ -131,7 +131,8 @@ func (mb *tcpPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 
 // tcpTransporter implements Transporter interface
 type tcpTransporter struct {
-	ConnectString string
+	// Connect string
+	Address string
 	// Connect & Read timeout
 	Timeout time.Duration
 	// Transmission logger
@@ -201,14 +202,14 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	return
 }
 
-// Connects to the address in ConnectString
+// Connect establishes a new connection to the address in Address
 // Connect and Close are exported so that multiple requests can be done with one session
 func (mb *tcpTransporter) Connect() (err error) {
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: connecting '%v'\n", mb.ConnectString)
+		mb.Logger.Printf("modbus: connecting '%v'\n", mb.Address)
 	}
 	dialer := net.Dialer{Timeout: mb.Timeout}
-	mb.conn, err = dialer.Dial("tcp", mb.ConnectString)
+	mb.conn, err = dialer.Dial("tcp", mb.Address)
 	return
 }
 
@@ -218,7 +219,7 @@ func (mb *tcpTransporter) Close() (err error) {
 		err = mb.conn.Close()
 		mb.conn = nil
 		if mb.Logger != nil {
-			mb.Logger.Printf("modbus: closed connection '%v'\n", mb.ConnectString)
+			mb.Logger.Printf("modbus: closed connection '%v'\n", mb.Address)
 		}
 	}
 	return
