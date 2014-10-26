@@ -32,7 +32,7 @@ func TCPClient(connectString string) Client {
 }
 
 func TCPClientWithHandler(handler *TCPClientHandler) Client {
-	return &client{packager: handler, transporter: handler}
+	return NewClient(handler, handler)
 }
 
 // Implements Encoder and Decoder interface

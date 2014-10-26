@@ -35,7 +35,7 @@ func ASCIIClient(device string) Client {
 }
 
 func ASCIIClientWithHandler(handler *ASCIIClientHandler) Client {
-	return &client{packager: handler, transporter: handler}
+	return NewClient(handler, handler)
 }
 
 // Implements Encoder and Decoder interface

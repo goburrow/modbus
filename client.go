@@ -13,6 +13,10 @@ type client struct {
 	transporter Transporter
 }
 
+func NewClient(packager Packager, transporter Transporter) Client {
+	return &client{packager: packager, transporter: transporter}
+}
+
 // Request:
 //  Function code         : 1 byte (0x01)
 //  Starting address      : 2 bytes
