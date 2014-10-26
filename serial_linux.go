@@ -5,10 +5,16 @@ package modbus
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"syscall"
+	"time"
 	"unsafe"
+)
+
+const (
+	serialSleepMillis = 1000
 )
 
 var baudRates = map[int]uint32{
@@ -53,7 +59,11 @@ var charSizes = map[int]uint32{
 
 // Serial implements serialController interface.
 type serial struct {
-	Logger     *log.Logger
+	// Logger for debug purpose
+	Logger *log.Logger
+	// Read timeout
+	Timeout time.Duration
+	// Should use fd directly by using syscall.Open() ?
 	file       *os.File
 	oldTermios *syscall.Termios
 }
@@ -67,7 +77,8 @@ func (mb *serial) Connect(config *serialConfig) (err error) {
 	// See man termios(3)
 	// O_NOCTTY: no controlling terminal
 	// O_NDELAY: no data carrier detect
-	if mb.file, err = os.OpenFile(config.Device, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666)); err != nil {
+	mb.file, err = os.OpenFile(config.Device, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666))
+	if err != nil {
 		return
 	}
 	// Backup current termios
@@ -90,12 +101,27 @@ func (mb *serial) Close() (err error) {
 	return
 }
 
+// IsConnected returns true if serial port has been opened
 func (mb *serial) IsConnected() bool {
 	return mb.file != nil
 }
 
+// Read reads from serial port, blocked until data received or timeout after Timeout
 func (mb *serial) Read(b []byte) (n int, err error) {
-	n, err = mb.file.Read(b)
+	deadline := time.Now().Add(mb.Timeout)
+	for {
+		n, err = mb.file.Read(b)
+		if err != io.EOF {
+			return
+		}
+		// EOF means no data
+		if time.Now().After(deadline) {
+			err = fmt.Errorf("modbus: read timeout after %s", mb.Timeout.String())
+			return
+		}
+		// Continue reading after a sleep
+		time.Sleep(serialSleepMillis * time.Millisecond)
+	}
 	return
 }
 

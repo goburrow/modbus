@@ -18,7 +18,6 @@ const (
 	asciiMaxLength = 513
 
 	asciiTimeoutMillis = 5000
-	asciiSleepMillis   = 1000
 
 	hexTable = "0123456789ABCDEF"
 )
@@ -171,53 +170,55 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 		}
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+		mb.Logger.Printf("modbus: sending %s\n", aduRequest)
 	}
 	var n int
 	if n, err = mb.serial.Write(aduRequest); err != nil {
 		return
 	}
-	// TODO: use channel to handle timeout
-	// TODO: use syscall.select to wait for data arrived
 	var data [asciiMaxLength]byte
 	length := 0
-	deadline := time.Now().Add(mb.Timeout)
-
 	for {
 		if n, err = mb.serial.Read(data[length:]); err != nil {
 			return
 		}
 		length += n
-		if length >= asciiMaxLength {
+		if length >= asciiMaxLength || n == 0 {
 			break
 		}
 		// Expect end of frame in the data received
 		if length > asciiMinLength {
-			if string(data[length-len(asciiEnd):]) == asciiEnd {
+			if string(data[length-len(asciiEnd):length]) == asciiEnd {
 				break
 			}
 		}
-		if time.Now().After(deadline) {
-			err = fmt.Errorf("modbus: Read timeout after %s", mb.Timeout.String())
-			return
-		}
-		time.Sleep(asciiSleepMillis * time.Millisecond)
 	}
 	aduResponse = data[:length]
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: received %s\n", aduResponse)
+	}
 	return
 }
 
 func (mb *asciiSerialTransporter) Connect() (err error) {
-	// timeout is required
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: connecting '%v'\n", mb.serialConfig.Device)
+	}
+	// Timeout is required
 	if mb.Timeout <= 0 {
 		mb.Timeout = asciiTimeoutMillis * time.Millisecond
 	}
+	// Transfer timeout setting to serial backend
+	mb.serial.Timeout = mb.Timeout
 	err = mb.serial.Connect(&mb.serialConfig)
 	return
 }
 
 func (mb *asciiSerialTransporter) Close() (err error) {
 	err = mb.serial.Close()
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: closed connection '%v'\n", mb.serialConfig.Device)
+	}
 	return
 }
 

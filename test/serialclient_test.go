@@ -21,6 +21,7 @@ func TestASCIIClientReadCoils(t *testing.T) {
 func TestASCIIClientAdvancedUsage(t *testing.T) {
 	var handler modbus.ASCIIClientHandler
 	handler.Device = testAsciiDevice
+	handler.SlaveId = 17
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	err := handler.Connect()
 	if err != nil {
