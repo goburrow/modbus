@@ -19,13 +19,13 @@ func bytesEqual(a []byte, b []byte) bool {
 	return true
 }
 
-func TestTcpEncoder(t *testing.T) {
-	encoder := TcpEncodeDecoder{}
+func TestTcpEncoding(t *testing.T) {
+	packager := tcpPackager{}
 	pdu := ProtocolDataUnit{}
 	pdu.FunctionCode = 3
 	pdu.Data = []byte{0, 4, 0, 3}
 
-	adu, err := encoder.Encode(&pdu)
+	adu, err := packager.Encode(&pdu)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,13 +36,13 @@ func TestTcpEncoder(t *testing.T) {
 	}
 }
 
-func TestTcpDecoder(t *testing.T) {
-	decoder := TcpEncodeDecoder{}
-	decoder.transactionId = 1
-	decoder.UnitId = 17
+func TestTcpDecoding(t *testing.T) {
+	packager := tcpPackager{}
+	packager.transactionId = 1
+	packager.UnitId = 17
 	adu := []byte{0, 1, 0, 0, 0, 6, 17, 3, 0, 120, 0, 3}
 
-	pdu, err := decoder.Decode(adu)
+	pdu, err := packager.Decode(adu)
 	if err != nil {
 		t.Fatal(err)
 	}

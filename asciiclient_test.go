@@ -20,8 +20,8 @@ func serialBytesEqual(a []byte, b []byte) bool {
 	return true
 }
 
-func TestAsciiEncoder(t *testing.T) {
-	encoder := asciiEncodeDecoder{}
+func TestAsciiEncoding(t *testing.T) {
+	encoder := asciiPackager{}
 	encoder.SlaveId = 17
 
 	pdu := ProtocolDataUnit{}
@@ -38,8 +38,8 @@ func TestAsciiEncoder(t *testing.T) {
 	}
 }
 
-func TestAsciiDecoder(t *testing.T) {
-	decoder := asciiEncodeDecoder{}
+func TestAsciiDecoding(t *testing.T) {
+	decoder := asciiPackager{}
 	decoder.SlaveId = 247
 	adu := []byte(":F7031389000A60\r\n")
 

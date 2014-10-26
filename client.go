@@ -9,8 +9,7 @@ import (
 )
 
 type client struct {
-	encoder     Encoder
-	decoder     Decoder
+	packager    Packager
 	transporter Transporter
 }
 
@@ -420,7 +419,7 @@ func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
 
 // Send a request and check possible exception in the response
 func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, err error) {
-	aduRequest, err := mb.encoder.Encode(request)
+	aduRequest, err := mb.packager.Encode(request)
 	if err != nil {
 		return
 	}
@@ -428,7 +427,10 @@ func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, e
 	if err != nil {
 		return
 	}
-	response, err = mb.decoder.Decode(aduResponse)
+	if err = mb.packager.Verify(aduRequest, aduResponse); err != nil {
+		return
+	}
+	response, err = mb.packager.Decode(aduResponse)
 	if err != nil {
 		return
 	}

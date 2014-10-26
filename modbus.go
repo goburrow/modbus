@@ -46,12 +46,10 @@ type ProtocolDataUnit struct {
 	Data         []byte
 }
 
-type Encoder interface {
+type Packager interface {
 	Encode(pdu *ProtocolDataUnit) (adu []byte, err error)
-}
-
-type Decoder interface {
 	Decode(adu []byte) (pdu *ProtocolDataUnit, err error)
+	Verify(aduRequest []byte, aduResponse []byte) (err error)
 }
 
 type Transporter interface {

@@ -13,17 +13,16 @@ import (
 )
 
 const (
-	TcpProtocolIdentifier uint16 = 0x0000
-	TcpUnitIdentifier     byte   = 0xFF
+	tcpProtocolIdentifier uint16 = 0x0000
 
 	// Modbus Application Protocol
-	TcpHeaderLength = 7
-	TcpMaxADULength = 260
+	tcpHeaderLength = 7
+	tcpMaxLength    = 260
 )
 
 type TcpClientHandler struct {
-	TcpEncodeDecoder
-	TcpTransporter
+	tcpPackager
+	tcpTransporter
 }
 
 func TcpClient(connectString string) Client {
@@ -33,24 +32,23 @@ func TcpClient(connectString string) Client {
 }
 
 func TcpClientWithHandler(handler *TcpClientHandler) Client {
-	return &client{encoder: handler, decoder: handler, transporter: handler}
+	return &client{packager: handler, transporter: handler}
 }
 
 // Implements Encoder and Decoder interface
-type TcpEncodeDecoder struct {
+type tcpPackager struct {
 	// For synchronization between messages of server & client
-	// TODO put in a context for the sake of thread-safe
 	transactionId uint16
-	// FIXME unit id must be 0xFF
+	// Broadcast address is 0
 	UnitId byte
 }
 
-// Adds modbus application protocol header:
+// Encode adds modbus application protocol header:
 //  Transaction identifier: 2 bytes
 //  Protocol identifier: 2 bytes
 //  Length: 2 bytes
 //  Unit identifier: 1 byte
-func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
+func (mb *tcpPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	var buf bytes.Buffer
 
 	// Transaction identifier
@@ -59,7 +57,7 @@ func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error
 		return
 	}
 	// Protocol identifier
-	if err = binary.Write(&buf, binary.BigEndian, TcpProtocolIdentifier); err != nil {
+	if err = binary.Write(&buf, binary.BigEndian, tcpProtocolIdentifier); err != nil {
 		return
 	}
 	// Length = sizeof(UnitId) + sizeof(FunctionCode) + Data
@@ -87,63 +85,52 @@ func (mb *TcpEncodeDecoder) Encode(pdu *ProtocolDataUnit) (adu []byte, err error
 	return
 }
 
-func (mb *TcpEncodeDecoder) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
-	var (
-		transactionId uint16
-		protocolId    uint16
-		length        uint16
-		unitId        uint8
-	)
-
-	buf := bytes.NewReader(adu)
-	if err = binary.Read(buf, binary.BigEndian, &transactionId); err != nil {
+// Verify confirm transaction, protocol and unit id
+func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
+	// Transaction id
+	responseVal := binary.BigEndian.Uint16(aduResponse)
+	requestVal := binary.BigEndian.Uint16(aduRequest)
+	if responseVal != requestVal {
+		err = fmt.Errorf("modbus: adu transaction id '%v' does not match request '%v'", responseVal, requestVal)
 		return
 	}
-	// Not thread safe yet
-	if transactionId != mb.transactionId {
-		err = fmt.Errorf("modbus: adu transaction id '%v' does not match request '%v'", transactionId, mb.transactionId)
+	// Protocol id
+	responseVal = binary.BigEndian.Uint16(aduResponse[2:])
+	requestVal = binary.BigEndian.Uint16(aduRequest[2:])
+	if responseVal != requestVal {
+		err = fmt.Errorf("modbus: adu protocol id '%v' does not match request '%v'", responseVal, requestVal)
 		return
 	}
-	if err = binary.Read(buf, binary.BigEndian, &protocolId); err != nil {
-		return
-	}
-	if protocolId != TcpProtocolIdentifier {
-		err = fmt.Errorf("modbus: adu protocol id '%v' does not match request '%v'", protocolId, TcpProtocolIdentifier)
-		return
-	}
-	if err = binary.Read(buf, binary.BigEndian, &length); err != nil {
-		return
-	}
-	if err = binary.Read(buf, binary.BigEndian, &unitId); err != nil {
-		return
-	}
-	if unitId != mb.UnitId {
-		err = fmt.Errorf("modbus: adu unit id '%v' does not match request '%v'", unitId, mb.UnitId)
-		return
-	}
-	pduLength := buf.Len()
-	if pduLength == 0 || pduLength != int(length-1) {
-		err = fmt.Errorf("modbus: adu length '%v' does not match pdu data '%v'", length-1, pduLength)
-		return
-	}
-	pdu = &ProtocolDataUnit{}
-	if err = binary.Read(buf, binary.BigEndian, &pdu.FunctionCode); err != nil {
-		return
-	}
-	pdu.Data = make([]byte, pduLength-1)
-	var n int
-	if n, err = buf.Read(pdu.Data); err != nil {
-		return
-	}
-	if n != pduLength-1 {
-		err = fmt.Errorf("modbus: pdu data size '%v' does not match expected '%v'", n, pduLength-1)
+	// Unit id (1 byte)
+	if aduResponse[6] != aduRequest[6] {
+		err = fmt.Errorf("modbus: adu unit id '%v' does not match request '%v'", aduResponse[6], aduRequest[6])
 		return
 	}
 	return
 }
 
-// Implements Transporter interface
-type TcpTransporter struct {
+// Decode extracts PDU from TCP frame:
+//  Transaction identifier: 2 bytes
+//  Protocol identifier: 2 bytes
+//  Length: 2 bytes
+//  Unit identifier: 1 byte
+func (mb *tcpPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
+	// Read length value in the header
+	length := binary.BigEndian.Uint16(adu[4:])
+	pduLength := len(adu) - tcpHeaderLength
+	if pduLength <= 0 || pduLength != int(length-1) {
+		err = fmt.Errorf("modbus: adu length '%v' does not match pdu data '%v'", length-1, pduLength)
+		return
+	}
+	pdu = &ProtocolDataUnit{}
+	// The first byte after header is function code
+	pdu.FunctionCode = adu[tcpHeaderLength]
+	pdu.Data = adu[tcpHeaderLength+1:]
+	return
+}
+
+// tcpTransporter implements Transporter interface
+type tcpTransporter struct {
 	ConnectString string
 	// Connect & Read timeout
 	Timeout time.Duration
@@ -154,8 +141,9 @@ type TcpTransporter struct {
 	conn net.Conn
 }
 
-func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	var data [TcpMaxADULength]byte
+// Send sends data to server and ensures response length is greater than header length
+func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
+	var data [tcpMaxLength]byte
 
 	if mb.conn != nil {
 		// Flush current data and check if the connection is alive
@@ -177,14 +165,14 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	}
 	// Read header first
 	var n int
-	if n, err = mb.read(data[:TcpHeaderLength]); err != nil {
+	if n, err = mb.read(data[:tcpHeaderLength]); err != nil {
 		return
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received header %v\n", data[:TcpHeaderLength])
+		mb.Logger.Printf("modbus: received header %v\n", data[:tcpHeaderLength])
 	}
-	if n != TcpHeaderLength {
-		err = fmt.Errorf("modbus: response header size '%v' does not match expected '%v'", n, TcpHeaderLength)
+	if n != tcpHeaderLength {
+		err = fmt.Errorf("modbus: response header size '%v' does not match expected '%v'", n, tcpHeaderLength)
 		return
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
@@ -193,13 +181,13 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		err = fmt.Errorf("modbus: length in response header '%v' must not be zero", length)
 		return
 	}
-	if length > (TcpMaxADULength - TcpHeaderLength + 1) {
-		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, TcpMaxADULength-TcpHeaderLength+1)
+	if length > (tcpMaxLength - tcpHeaderLength + 1) {
+		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderLength+1)
 		return
 	}
 	// Skip unit id
-	length = TcpHeaderLength - 1 + length
-	idx := TcpHeaderLength
+	length = tcpHeaderLength - 1 + length
+	idx := tcpHeaderLength
 	for idx < length {
 		if n, err = mb.read(data[idx:length]); err != nil {
 			return
@@ -215,23 +203,29 @@ func (mb *TcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 
 // Connects to the address in ConnectString
 // Connect and Close are exported so that multiple requests can be done with one session
-func (mb *TcpTransporter) Connect() (err error) {
+func (mb *tcpTransporter) Connect() (err error) {
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: connecting '%v'\n", mb.ConnectString)
+	}
 	dialer := net.Dialer{Timeout: mb.Timeout}
 	mb.conn, err = dialer.Dial("tcp", mb.ConnectString)
 	return
 }
 
 // Closes current connection
-func (mb *TcpTransporter) Close() (err error) {
+func (mb *tcpTransporter) Close() (err error) {
 	if mb.conn != nil {
 		err = mb.conn.Close()
 		mb.conn = nil
+		if mb.Logger != nil {
+			mb.Logger.Printf("modbus: closed connection '%v'\n", mb.ConnectString)
+		}
 	}
 	return
 }
 
 // These methods must only be called after Connect()
-func (mb *TcpTransporter) write(b []byte) (err error) {
+func (mb *tcpTransporter) write(b []byte) (err error) {
 	var n int
 	if mb.Timeout > 0 {
 		if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
@@ -249,7 +243,7 @@ func (mb *TcpTransporter) write(b []byte) (err error) {
 	return
 }
 
-func (mb *TcpTransporter) read(b []byte) (n int, err error) {
+func (mb *tcpTransporter) read(b []byte) (n int, err error) {
 	if mb.Timeout > 0 {
 		if err = mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout)); err != nil {
 			return
@@ -261,7 +255,7 @@ func (mb *TcpTransporter) read(b []byte) (n int, err error) {
 
 // Flushes pending data in the connection,
 // returns io.EOF if connection is closed
-func (mb *TcpTransporter) flush(b []byte) (err error) {
+func (mb *tcpTransporter) flush(b []byte) (err error) {
 	if err = mb.conn.SetReadDeadline(time.Now()); err != nil {
 		return
 	}

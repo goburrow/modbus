@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 const (
@@ -77,6 +78,7 @@ func TestTcpClientReadFIFOQueue(t *testing.T) {
 func TestTcpClientAdvancedUsage(t *testing.T) {
 	var handler modbus.TcpClientHandler
 	handler.ConnectString = testTcpServer
+	handler.Timeout = 5 * time.Second
 	handler.UnitId = 0x01
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	handler.Connect()
