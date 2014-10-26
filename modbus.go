@@ -37,7 +37,30 @@ const (
 )
 
 func (e *ModbusError) Error() string {
-	return fmt.Sprintf("modbus: exception '%v', function '%v'", e.ExceptionCode, e.FunctionCode)
+	var name string
+	switch e.ExceptionCode {
+	case ExceptionCodeIllegalFunction:
+		name = "illegal function"
+	case ExceptionCodeIllegalDataAddress:
+		name = "illegal data address"
+	case ExceptionCodeIllegalDataValue:
+		name = "illegal data value"
+	case ExceptionCodeServerDeviceFailure:
+		name = "server device failure"
+	case ExceptionCodeAcknowledge:
+		name = "acknowledge"
+	case ExceptionCodeServerDeviceBusy:
+		name = "server device busy"
+	case ExceptionCodeMemoryParityError:
+		name = "memory parity error"
+	case ExceptionCodeGatewayPathUnavailable:
+		name = "gateway path unavailable"
+	case ExceptionCodeGatewayTargetDeviceFailedToRespond:
+		name = "gateway target device failed to respond"
+	default:
+		name = "unknown"
+	}
+	return fmt.Sprintf("modbus: exception '%v' (%s), function '%v'", e.ExceptionCode, name, e.FunctionCode)
 }
 
 // PDU
