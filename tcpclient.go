@@ -20,18 +20,18 @@ const (
 	tcpMaxLength    = 260
 )
 
-type TcpClientHandler struct {
+type TCPClientHandler struct {
 	tcpPackager
 	tcpTransporter
 }
 
-func TcpClient(connectString string) Client {
-	handler := &TcpClientHandler{}
+func TCPClient(connectString string) Client {
+	handler := &TCPClientHandler{}
 	handler.ConnectString = connectString
-	return TcpClientWithHandler(handler)
+	return TCPClientWithHandler(handler)
 }
 
-func TcpClientWithHandler(handler *TcpClientHandler) Client {
+func TCPClientWithHandler(handler *TCPClientHandler) Client {
 	return &client{packager: handler, transporter: handler}
 }
 

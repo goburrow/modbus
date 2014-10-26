@@ -12,79 +12,79 @@ import (
 )
 
 const (
-	testTcpServer = "localhost:5020"
+	testTCPServer = "localhost:5020"
 )
 
-func TestTcpClientReadCoils(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientReadCoils(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestReadCoils(t, client)
 }
 
-func TestTcpClientReadDiscreteInputs(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientReadDiscreteInputs(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	// Read discrete inputs 197-218
 	ClientTestDiscreteInputs(t, client)
 }
 
-func TestTcpClientReadHoldingRegisters(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientReadHoldingRegisters(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestReadHoldingRegisters(t, client)
 }
 
-func TestTcpClientReadInputRegisters(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientReadInputRegisters(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestReadInputRegisters(t, client)
 }
 
-func TestTcpClientWriteSingleCoil(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientWriteSingleCoil(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestWriteSingleCoil(t, client)
 }
 
-func TestTcpClientWriteSingleRegister(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientWriteSingleRegister(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestWriteSingleRegister(t, client)
 }
 
-func TestTcpClientWriteMultipleCoils(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientWriteMultipleCoils(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestWriteMultipleCoils(t, client)
 }
 
-func TestTcpClientWriteMultipleRegisters(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientWriteMultipleRegisters(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestWriteMultipleRegisters(t, client)
 }
 
-func TestTcpClientMaskWriteRegisters(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientMaskWriteRegisters(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestMaskWriteRegisters(t, client)
 }
 
-func TestTcpClientReadWriteMultipleRegisters(t *testing.T) {
-	client := modbus.TcpClient(testTcpServer)
+func TestTCPClientReadWriteMultipleRegisters(t *testing.T) {
+	client := modbus.TCPClient(testTCPServer)
 	ClientTestReadWriteMultipleRegisters(t, client)
 }
 
-func TestTcpClientReadFIFOQueue(t *testing.T) {
-	handler := &modbus.TcpClientHandler{}
-	handler.ConnectString = testTcpServer
+func TestTCPClientReadFIFOQueue(t *testing.T) {
+	handler := &modbus.TCPClientHandler{}
+	handler.ConnectString = testTCPServer
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 
-	client := modbus.TcpClientWithHandler(handler)
+	client := modbus.TCPClientWithHandler(handler)
 	ClientTestReadFIFOQueue(t, client)
 }
 
-func TestTcpClientAdvancedUsage(t *testing.T) {
-	var handler modbus.TcpClientHandler
-	handler.ConnectString = testTcpServer
+func TestTCPClientAdvancedUsage(t *testing.T) {
+	var handler modbus.TCPClientHandler
+	handler.ConnectString = testTCPServer
 	handler.Timeout = 5 * time.Second
 	handler.UnitId = 0x01
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	handler.Connect()
 	defer handler.Close()
 
-	client := modbus.TcpClientWithHandler(&handler)
+	client := modbus.TCPClientWithHandler(&handler)
 	results, err := client.ReadDiscreteInputs(15, 2)
 	if err != nil || results == nil {
 		t.Fatal(err, results)

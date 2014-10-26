@@ -19,7 +19,7 @@ func bytesEqual(a []byte, b []byte) bool {
 	return true
 }
 
-func TestTcpEncoding(t *testing.T) {
+func TestTCPEncoding(t *testing.T) {
 	packager := tcpPackager{}
 	pdu := ProtocolDataUnit{}
 	pdu.FunctionCode = 3
@@ -36,7 +36,7 @@ func TestTcpEncoding(t *testing.T) {
 	}
 }
 
-func TestTcpDecoding(t *testing.T) {
+func TestTCPDecoding(t *testing.T) {
 	packager := tcpPackager{}
 	packager.transactionId = 1
 	packager.UnitId = 17

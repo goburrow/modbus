@@ -30,14 +30,19 @@ Usage
 -----
 Basic usage:
 ```go
-client := modbus.TcpClient("localhost:502")
+// Modbus TCP
+client := modbus.TCPClient("localhost:502")
 // Read input register 9
 results, err := client.ReadInputRegisters(8, 1)
+
+// Modbus RTU/ASCII
+client = modbus.ASCIIClient("/dev/ttyS0")
+results, err = client.ReadCoils(2, 1)
 ```
 
 Advanced usage:
 ```go
-var handler modbus.TcpClientHandler
+var handler modbus.TCPClientHandler
 handler.ConnectString = "localhost:502"
 handler.Timeout = 5 * time.Second
 handler.UnitId = 0x01
@@ -46,7 +51,7 @@ handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 handler.Connect()
 defer handler.Close()
 
-client := modbus.TcpClientWithHandler(&handler)
+client := modbus.TCPClientWithHandler(&handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 results, err = client.WriteMultipleRegisters(1, 2, []byte{0, 3, 0, 4})
 results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
