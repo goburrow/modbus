@@ -62,7 +62,8 @@ func (mb *asciiPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 		return
 	}
 	// Exclude the beginning colon and terminating CRLF pair characters
-	var lrc lRC
+	var lrc lrc
+	lrc.reset()
 	lrc.pushByte(mb.SlaveId).pushByte(pdu.FunctionCode).pushBytes(pdu.Data)
 	if err = writeHex(&buf, []byte{lrc.value()}); err != nil {
 		return
@@ -140,7 +141,8 @@ func (mb *asciiPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 		return
 	}
 	// Calculate checksum
-	var lrc lRC
+	var lrc lrc
+	lrc.reset()
 	lrc.pushByte(address).pushByte(pdu.FunctionCode).pushBytes(pdu.Data)
 	if lrcVal != lrc.value() {
 		err = fmt.Errorf("modbus: response lrc '%v' does not match expected '%v'", lrcVal, lrc.value())

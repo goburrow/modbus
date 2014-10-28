@@ -4,23 +4,29 @@
 package modbus
 
 // Longitudinal Redundancy Checking
-type lRC struct {
+type lrc struct {
 	sum uint8
 }
 
-func (lrc *lRC) pushByte(b byte) *lRC {
+func (lrc *lrc) reset() *lrc {
+	lrc.sum = 0
+	return lrc
+}
+
+func (lrc *lrc) pushByte(b byte) *lrc {
 	lrc.sum += b
 	return lrc
 }
 
-func (lrc *lRC) pushBytes(data []byte) *lRC {
-	for _, b := range data {
-		lrc.pushByte(b)
+func (lrc *lrc) pushBytes(data []byte) *lrc {
+	var b byte
+	for _, b = range data {
+		lrc.sum += b
 	}
 	return lrc
 }
 
-func (lrc *lRC) value() byte {
+func (lrc *lrc) value() byte {
 	// Return twos complement
 	return uint8(-int8(lrc.sum))
 }
