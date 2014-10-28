@@ -5,16 +5,11 @@ package modbus
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"syscall"
 	"time"
 	"unsafe"
-)
-
-const (
-	serialSleepMillis = 1000
 )
 
 var baudRates = map[int]uint32{
@@ -83,7 +78,7 @@ func (mb *serial) Connect(config *serialConfig) (err error) {
 	}
 	// Backup current termios
 	mb.backupTermios()
-	if err = tcsetattr(mb.file.Fd(), termios); err != nil {
+	if err = tcsetattr(int(mb.file.Fd()), termios); err != nil {
 		mb.file.Close()
 		mb.file = nil
 		mb.oldTermios = nil
@@ -108,20 +103,24 @@ func (mb *serial) IsConnected() bool {
 
 // Read reads from serial port, blocked until data received or timeout after Timeout
 func (mb *serial) Read(b []byte) (n int, err error) {
-	deadline := time.Now().Add(mb.Timeout)
-	for {
-		n, err = mb.file.Read(b)
-		if err != io.EOF {
-			return
-		}
-		// EOF means no data
-		if time.Now().After(deadline) {
-			err = fmt.Errorf("modbus: read timeout after %s", mb.Timeout.String())
-			return
-		}
-		// Continue reading after a sleep
-		time.Sleep(serialSleepMillis * time.Millisecond)
+	var rfds syscall.FdSet
+	var timeout syscall.Timeval
+
+	fd := int(mb.file.Fd())
+	fd_set(fd, &rfds)
+
+	timeout.Sec = mb.Timeout.Nanoseconds() / 1E9
+	timeout.Usec = (mb.Timeout.Nanoseconds() % 1E9) / 1E3
+
+	if _, err = syscall.Select(fd + 1, &rfds, nil, nil, &timeout); err != nil {
+		return
 	}
+	if fd_isset(fd, &rfds) {
+		n, err = mb.file.Read(b)
+		return
+	}
+	// Timeout
+	err = fmt.Errorf("modbus: read timeout after %s", mb.Timeout.String())
 	return
 }
 
@@ -134,7 +133,7 @@ func (mb *serial) Write(b []byte) (n int, err error) {
 // Make sure that device file has been opened before calling this function.
 func (mb *serial) backupTermios() {
 	oldTermios := &syscall.Termios{}
-	if err := tcgetattr(mb.file.Fd(), oldTermios); err != nil {
+	if err := tcgetattr(int(mb.file.Fd()), oldTermios); err != nil {
 		// Warning only
 		if mb.Logger != nil {
 			log.Printf("modbus: Could not get current termios setting '%v'\n", err)
@@ -151,7 +150,7 @@ func (mb *serial) restoreTermios() {
 	if mb.oldTermios == nil {
 		return
 	}
-	if err := tcsetattr(mb.file.Fd(), mb.oldTermios); err != nil {
+	if err := tcsetattr(int(mb.file.Fd()), mb.oldTermios); err != nil {
 		// Warning only
 		if mb.Logger != nil {
 			mb.Logger.Printf("modbus: Could not restore termios setting '%v'\n", err)
@@ -238,9 +237,9 @@ func newTermios(config *serialConfig) (termios *syscall.Termios, err error) {
 
 // Set terminal file descriptor parameters.
 // See man tcsetattr(3)
-func tcsetattr(fd uintptr, termios *syscall.Termios) (err error) {
+func tcsetattr(fd int, termios *syscall.Termios) (err error) {
 	r, _, errno := syscall.Syscall(uintptr(syscall.SYS_IOCTL),
-		fd, uintptr(syscall.TCSETS), uintptr(unsafe.Pointer(termios)))
+		uintptr(fd), uintptr(syscall.TCSETS), uintptr(unsafe.Pointer(termios)))
 	if errno != 0 {
 		err = errno
 		return
@@ -253,9 +252,9 @@ func tcsetattr(fd uintptr, termios *syscall.Termios) (err error) {
 
 // Get terminal file descriptor parameters.
 // See man tcgetattr(3)
-func tcgetattr(fd uintptr, termios *syscall.Termios) (err error) {
+func tcgetattr(fd int, termios *syscall.Termios) (err error) {
 	r, _, errno := syscall.Syscall(uintptr(syscall.SYS_IOCTL),
-		fd, uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(termios)))
+		uintptr(fd), uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(termios)))
 	if errno != 0 {
 		err = errno
 		return
@@ -264,4 +263,18 @@ func tcgetattr(fd uintptr, termios *syscall.Termios) (err error) {
 		err = fmt.Errorf("modbus: tcgetattr failed '%v'", r)
 	}
 	return
+}
+
+// C.FD_SET
+func fd_set(fd int, fds *syscall.FdSet) {
+	idx := fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
+	pos := fd % (syscall.FD_SETSIZE / len(fds.Bits))
+	fds.Bits[idx] = 1 << uint(pos)
+}
+
+// C.FD_ISSET
+func fd_isset(fd int, fds *syscall.FdSet) bool {
+	idx := fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
+	pos := fd % (syscall.FD_SETSIZE / len(fds.Bits))
+	return fds.Bits[idx] & (1 << uint(pos)) != 0
 }
