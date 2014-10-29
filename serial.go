@@ -4,8 +4,8 @@
 package modbus
 
 import (
-	"time"
 	"log"
+	"time"
 )
 
 const (

@@ -120,7 +120,7 @@ func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	timeout.Sec = mb.Timeout.Nanoseconds() / 1E9
 	timeout.Usec = (mb.Timeout.Nanoseconds() % 1E9) / 1E3
 
-	if _, err = syscall.Select(fd + 1, &rfds, nil, nil, &timeout); err != nil {
+	if _, err = syscall.Select(fd+1, &rfds, nil, nil, &timeout); err != nil {
 		return
 	}
 	if fd_isset(fd, &rfds) {
@@ -284,5 +284,5 @@ func fd_set(fd int, fds *syscall.FdSet) {
 func fd_isset(fd int, fds *syscall.FdSet) bool {
 	idx := fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
 	pos := fd % (syscall.FD_SETSIZE / len(fds.Bits))
-	return fds.Bits[idx] & (1 << uint(pos)) != 0
+	return fds.Bits[idx]&(1<<uint(pos)) != 0
 }
