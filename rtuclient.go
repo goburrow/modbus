@@ -5,15 +5,11 @@ package modbus
 
 import (
 	"fmt"
-	"log"
-	"time"
 )
 
 const (
 	rtuMinLength = 4
 	rtuMaxLength = 256
-
-	rtuTimeoutMillis = 5000
 )
 
 type RTUClientHandler struct {
@@ -100,60 +96,33 @@ func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 
 // asciiSerialTransporter implements Transporter interface
 type rtuSerialTransporter struct {
-	// Serial port configuration
-	serialConfig
-	// Read timeout
-	Timeout time.Duration
-	Logger  *log.Logger
-
-	// Serial controller
-	serial serial
+	// Extended from serialTransporter
+	serialTransporter
 }
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if mb.serial.IsConnected() {
+	if mb.isConnected() {
 		// flush current data pending in serial port
 	} else {
 		if err = mb.Connect(); err != nil {
 			return
 		}
+		defer mb.Close()
 	}
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
 	}
 	var n int
-	if n, err = mb.serial.Write(aduRequest); err != nil {
+	if n, err = mb.write(aduRequest); err != nil {
 		return
 	}
 	var data [rtuMaxLength]byte
-	if n, err = mb.serial.Read(data[:]); err != nil {
+	if n, err = mb.read(data[:]); err != nil {
 		return
 	}
 	aduResponse = data[:n]
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: received %v\n", aduResponse)
-	}
-	return
-}
-
-func (mb *rtuSerialTransporter) Connect() (err error) {
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: connecting '%v'\n", mb.serialConfig.Address)
-	}
-	// Timeout is required
-	if mb.Timeout <= 0 {
-		mb.Timeout = rtuTimeoutMillis * time.Millisecond
-	}
-	// Transfer timeout setting to serial backend
-	mb.serial.Timeout = mb.Timeout
-	err = mb.serial.Connect(&mb.serialConfig)
-	return
-}
-
-func (mb *rtuSerialTransporter) Close() (err error) {
-	err = mb.serial.Close()
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: closed connection '%v'\n", mb.serialConfig.Address)
 	}
 	return
 }

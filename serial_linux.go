@@ -52,27 +52,32 @@ var charSizes = map[int]uint32{
 	8: syscall.CS8,
 }
 
-// Serial implements serialController interface.
-type serial struct {
-	// Logger for debug purpose
-	Logger *log.Logger
-	// Read timeout
-	Timeout time.Duration
+// serialPort is included in serialTransporter.
+// The reason of using embedded struct rather than interface is to utilise
+// Logger and Timeout property without passing their reference.
+type serialPort struct {
 	// Should use fd directly by using syscall.Open() ?
 	file       *os.File
 	oldTermios *syscall.Termios
 }
 
 // Connect opens serial port. Device must be set before calling this method.
-func (mb *serial) Connect(config *serialConfig) (err error) {
-	termios, err := newTermios(config)
+func (mb *serialTransporter) Connect() (err error) {
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: connecting '%v'\n", mb.Address)
+	}
+	// Timeout is required
+	if mb.Timeout <= 0 {
+		mb.Timeout = serialTimeoutMillis * time.Millisecond
+	}
+	termios, err := newTermios(&mb.serialConfig)
 	if err != nil {
 		return
 	}
 	// See man termios(3)
 	// O_NOCTTY: no controlling terminal
 	// O_NDELAY: no data carrier detect
-	mb.file, err = os.OpenFile(config.Address, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666))
+	mb.file, err = os.OpenFile(mb.Address, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, os.FileMode(0666))
 	if err != nil {
 		return
 	}
@@ -87,7 +92,10 @@ func (mb *serial) Connect(config *serialConfig) (err error) {
 	return
 }
 
-func (mb *serial) Close() (err error) {
+func (mb *serialTransporter) Close() (err error) {
+	if mb.Logger != nil {
+		mb.Logger.Printf("modbus: closing '%v'\n", mb.Address)
+	}
 	if mb.file != nil {
 		mb.restoreTermios()
 		err = mb.file.Close()
@@ -97,12 +105,12 @@ func (mb *serial) Close() (err error) {
 }
 
 // IsConnected returns true if serial port has been opened
-func (mb *serial) IsConnected() bool {
+func (mb *serialTransporter) isConnected() bool {
 	return mb.file != nil
 }
 
 // Read reads from serial port, blocked until data received or timeout after Timeout
-func (mb *serial) Read(b []byte) (n int, err error) {
+func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	var rfds syscall.FdSet
 	var timeout syscall.Timeval
 
@@ -124,14 +132,14 @@ func (mb *serial) Read(b []byte) (n int, err error) {
 	return
 }
 
-func (mb *serial) Write(b []byte) (n int, err error) {
+func (mb *serialTransporter) write(b []byte) (n int, err error) {
 	n, err = mb.file.Write(b)
 	return
 }
 
 // getTermiosSetting saves current termios setting.
 // Make sure that device file has been opened before calling this function.
-func (mb *serial) backupTermios() {
+func (mb *serialTransporter) backupTermios() {
 	oldTermios := &syscall.Termios{}
 	if err := tcgetattr(int(mb.file.Fd()), oldTermios); err != nil {
 		// Warning only
@@ -146,7 +154,7 @@ func (mb *serial) backupTermios() {
 
 // resetTermiosSetting restores backed up termios setting.
 // Make sure that device file has been opened before calling this function.
-func (mb *serial) restoreTermios() {
+func (mb *serialTransporter) restoreTermios() {
 	if mb.oldTermios == nil {
 		return
 	}

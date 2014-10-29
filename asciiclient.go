@@ -7,8 +7,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"time"
 )
 
 const (
@@ -16,8 +14,6 @@ const (
 	asciiEnd       = "\r\n"
 	asciiMinLength = 3
 	asciiMaxLength = 513
-
-	asciiTimeoutMillis = 5000
 
 	hexTable = "0123456789ABCDEF"
 )
@@ -153,35 +149,29 @@ func (mb *asciiPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 
 // asciiSerialTransporter implements Transporter interface
 type asciiSerialTransporter struct {
-	// Serial port configuration
-	serialConfig
-	// Read timeout
-	Timeout time.Duration
-	Logger  *log.Logger
-
-	// Serial controller
-	serial serial
+	serialTransporter
 }
 
 func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if mb.serial.IsConnected() {
+	if mb.isConnected() {
 		// flush current data pending in serial port
 	} else {
 		if err = mb.Connect(); err != nil {
 			return
 		}
+		defer mb.Close()
 	}
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: sending %s\n", aduRequest)
 	}
 	var n int
-	if n, err = mb.serial.Write(aduRequest); err != nil {
+	if n, err = mb.write(aduRequest); err != nil {
 		return
 	}
 	var data [asciiMaxLength]byte
 	length := 0
 	for {
-		if n, err = mb.serial.Read(data[length:]); err != nil {
+		if n, err = mb.read(data[length:]); err != nil {
 			return
 		}
 		length += n
@@ -198,28 +188,6 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 	aduResponse = data[:length]
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: received %s\n", aduResponse)
-	}
-	return
-}
-
-func (mb *asciiSerialTransporter) Connect() (err error) {
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: connecting '%v'\n", mb.serialConfig.Address)
-	}
-	// Timeout is required
-	if mb.Timeout <= 0 {
-		mb.Timeout = asciiTimeoutMillis * time.Millisecond
-	}
-	// Transfer timeout setting to serial backend
-	mb.serial.Timeout = mb.Timeout
-	err = mb.serial.Connect(&mb.serialConfig)
-	return
-}
-
-func (mb *asciiSerialTransporter) Close() (err error) {
-	err = mb.serial.Close()
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: closed connection '%v'\n", mb.serialConfig.Address)
 	}
 	return
 }

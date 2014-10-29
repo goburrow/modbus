@@ -3,6 +3,16 @@
 // of the BSD license.  See the LICENSE file for details.
 package modbus
 
+import (
+	"time"
+	"log"
+)
+
+const (
+	// Default timeout
+	serialTimeoutMillis = 5000
+)
+
 // SerialConfig is common configuration for serial port.
 type serialConfig struct {
 	// Device path (/dev/ttyS0)
@@ -19,10 +29,22 @@ type serialConfig struct {
 }
 
 type serialController interface {
-	Connect(config *serialConfig) (err error)
+	Connect() (err error)
 	Close() (err error)
+	isConnected() bool
+	read(b []byte) (n int, err error)
+	write(b []byte) (n int, err error)
+}
 
-	IsConnected() bool
-	Read(b []byte) (n int, err error)
-	Write(b []byte) (n int, err error)
+// serialTransporter has configuration and I/O controller and must
+// implicitly implement serialController interface
+type serialTransporter struct {
+	// Serial port configuration
+	serialConfig
+	// Platform-dependent serial controller
+	serialPort
+
+	// Read timeout
+	Timeout time.Duration
+	Logger  *log.Logger
 }
