@@ -24,7 +24,7 @@ Bit access:
 Supported formats
 -----------------
 *   TCP
-*   Serial (RTU, ASCII) - in progress
+*   Serial (RTU, ASCII) - Linux only
 
 Usage
 -----
@@ -37,7 +37,7 @@ results, err := client.ReadInputRegisters(8, 1)
 
 // Modbus RTU/ASCII
 // Default configuration is 19200, 8, 1, even
-client = modbus.ASCIIClient("/dev/ttyS0")
+client = modbus.RTUClient("/dev/ttyS0")
 results, err = client.ReadCoils(2, 1)
 ```
 
@@ -61,7 +61,7 @@ results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
 
 ```go
 // Modbus RTU/ASCII
-var handler modbus.ASCIIClientHandler
+var handler modbus.RTUClientHandler
 handler.Address = "/dev/ttyUSB0"
 handler.BaudRate = 115200
 handler.CharSize = 8
@@ -73,7 +73,7 @@ handler.Timeout = 5 * time.Second
 err := handler.Connect()
 defer handler.Close()
 
-client := modbus.ASCIIClientWithHandler(&handler)
+client := modbus.RTUClientWithHandler(&handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 ```
 
