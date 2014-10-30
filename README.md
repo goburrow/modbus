@@ -1,5 +1,7 @@
 go modbus
 =========
+[![Build Status](https://travis-ci.org/goburrow/modbus.svg?branch=master)](https://travis-ci.org/goburrow/modbus)
+
 Fault-tolerant, fail-fast implementation of Modbus protocol in Go.
 
 Incubating - do not use in production yet (more testing needed).
