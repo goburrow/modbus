@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Modbus : Fault-tolerant implementation of modbus protocol in Go (golang)">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Modbus</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/goburrow/modbus">View on GitHub</a>
+
+          <h1 id="project_title">Modbus</h1>
+          <h2 id="project_tagline">Fault-tolerant implementation of modbus protocol in Go (golang)</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/goburrow/modbus/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/goburrow/modbus/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="go-modbus" class="anchor" href="#go-modbus"><span class="octicon octicon-link"></span></a>go modbus</h1>
+
+<p><a href="https://travis-ci.org/goburrow/modbus"><img src="https://travis-ci.org/goburrow/modbus.svg?branch=master" alt="Build Status"></a></p>
+
+<p>Fault-tolerant, fail-fast implementation of Modbus protocol in Go.</p>
+
+<p>Incubating - do not use in production yet (more testing needed).</p>
+
+<h2>
+<a name="supported-functions" class="anchor" href="#supported-functions"><span class="octicon octicon-link"></span></a>Supported functions</h2>
+
+<p>Bit access:</p>
+
+<ul>
+<li>  Read Discrete Inputs</li>
+<li>  Read Coils</li>
+<li>  Write Single Coil</li>
+<li>  Write Multiple Coils</li>
+</ul>
+
+<p>16-bit access:</p>
+
+<ul>
+<li>  Read Input Registers</li>
+<li>  Read Holding Registers</li>
+<li>  Write Single Register</li>
+<li>  Write Multiple Registers</li>
+<li>  Read/Write Multiple Registers</li>
+<li>  Mask Write Register</li>
+<li>  Read FIFO Queue</li>
+</ul>
+
+<h2>
+<a name="supported-formats" class="anchor" href="#supported-formats"><span class="octicon octicon-link"></span></a>Supported formats</h2>
+
+<ul>
+<li>  TCP</li>
+<li>  Serial (RTU, ASCII) - Linux only</li>
+</ul>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Basic usage:</p>
+
+<div class="highlight highlight-go"><pre><span class="c1">// Modbus TCP</span>
+<span class="nx">client</span> <span class="o">:=</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">TCPClient</span><span class="p">(</span><span class="s">"localhost:502"</span><span class="p">)</span>
+<span class="c1">// Read input register 9</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ReadInputRegisters</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1">// Modbus RTU/ASCII</span>
+<span class="c1">// Default configuration is 19200, 8, 1, even</span>
+<span class="nx">client</span> <span class="p">=</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">RTUClient</span><span class="p">(</span><span class="s">"/dev/ttyS0"</span><span class="p">)</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ReadCoils</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+<p>Advanced usage:</p>
+
+<div class="highlight highlight-go"><pre><span class="c1">// Modbus TCP</span>
+<span class="kd">var</span> <span class="nx">handler</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">TCPClientHandler</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Address</span> <span class="p">=</span> <span class="s">"localhost:502"</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Timeout</span> <span class="p">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">SlaveId</span> <span class="p">=</span> <span class="mh">0xFF</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Logger</span> <span class="p">=</span> <span class="nx">log</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span><span class="p">,</span> <span class="s">"test: "</span><span class="p">,</span> <span class="nx">log</span><span class="p">.</span><span class="nx">LstdFlags</span><span class="p">)</span>
+<span class="c1">// Connect manually so that multiple requests are handled in one connection session</span>
+<span class="nx">err</span> <span class="o">:=</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">Connect</span><span class="p">()</span>
+<span class="k">defer</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+
+<span class="nx">client</span> <span class="o">:=</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">TCPClientWithHandler</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">handler</span><span class="p">)</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ReadDiscreteInputs</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">WriteMultipleRegisters</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">})</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">WriteMultipleCoils</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">})</span>
+</pre></div>
+
+<div class="highlight highlight-go"><pre><span class="c1">// Modbus RTU/ASCII</span>
+<span class="kd">var</span> <span class="nx">handler</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">RTUClientHandler</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Address</span> <span class="p">=</span> <span class="s">"/dev/ttyUSB0"</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">BaudRate</span> <span class="p">=</span> <span class="mi">115200</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">CharSize</span> <span class="p">=</span> <span class="mi">8</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Parity</span> <span class="p">=</span> <span class="s">"N"</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">StopBits</span> <span class="p">=</span> <span class="mi">1</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">SlaveId</span> <span class="p">=</span> <span class="mi">1</span>
+<span class="nx">handler</span><span class="p">.</span><span class="nx">Timeout</span> <span class="p">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
+
+<span class="nx">err</span> <span class="o">:=</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">Connect</span><span class="p">()</span>
+<span class="k">defer</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+
+<span class="nx">client</span> <span class="o">:=</span> <span class="nx">modbus</span><span class="p">.</span><span class="nx">RTUClientWithHandler</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">handler</span><span class="p">)</span>
+<span class="nx">results</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">ReadDiscreteInputs</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+<h2>
+<a name="references" class="anchor" href="#references"><span class="octicon octicon-link"></span></a>References</h2>
+
+<ul>
+<li>  <a href="http://www.modbus.org/specs.php">Modbus Specifications and Implementation Guides</a>
+</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Modbus maintained by <a href="https://github.com/goburrow">goburrow</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
