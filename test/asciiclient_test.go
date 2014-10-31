@@ -23,7 +23,7 @@ func TestASCIIClientAdvancedUsage(t *testing.T) {
 	var handler modbus.ASCIIClientHandler
 	handler.Address = testAsciiDevice
 	handler.BaudRate = 19200
-	handler.CharSize = 8
+	handler.DataBits = 8
 	handler.Parity = "E"
 	handler.StopBits = 1
 	handler.SlaveId = 17

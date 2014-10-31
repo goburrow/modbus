@@ -66,7 +66,7 @@ results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
 var handler modbus.RTUClientHandler
 handler.Address = "/dev/ttyUSB0"
 handler.BaudRate = 115200
-handler.CharSize = 8
+handler.DataBits = 8
 handler.Parity = "N"
 handler.StopBits = 1
 handler.SlaveId = 1

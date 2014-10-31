@@ -20,7 +20,7 @@ type serialConfig struct {
 	// Baud rate (default 19200)
 	BaudRate int
 	// Data bits: 5, 6, 7 or 8 (default 8)
-	CharSize int
+	DataBits int
 	// Stop bits: 1 or 2 (default 1)
 	StopBits int
 	// Parity: N - None, E - Even, O - Odd (default E)

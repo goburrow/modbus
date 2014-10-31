@@ -189,12 +189,12 @@ func newTermios(config *serialConfig) (termios *syscall.Termios, err error) {
 	// Output baud
 	termios.Ospeed = flag
 	// Character size
-	if config.CharSize == 0 {
+	if config.DataBits == 0 {
 		flag = syscall.CS8
 	} else {
-		flag = charSizes[config.CharSize]
+		flag = charSizes[config.DataBits]
 		if flag == 0 {
-			err = fmt.Errorf("modbus: Character size '%v' is not supported", config.CharSize)
+			err = fmt.Errorf("modbus: Character size '%v' is not supported", config.DataBits)
 			return
 		}
 	}
