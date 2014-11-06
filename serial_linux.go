@@ -115,7 +115,7 @@ func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	var timeout syscall.Timeval
 
 	fd := int(mb.file.Fd())
-	fd_set(fd, &rfds)
+	fdSet(fd, &rfds)
 
 	timeout.Sec = mb.Timeout.Nanoseconds() / 1E9
 	timeout.Usec = (mb.Timeout.Nanoseconds() % 1E9) / 1E3
@@ -123,7 +123,7 @@ func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	if _, err = syscall.Select(fd+1, &rfds, nil, nil, &timeout); err != nil {
 		return
 	}
-	if fd_isset(fd, &rfds) {
+	if fdIsSet(fd, &rfds) {
 		n, err = mb.file.Read(b)
 		return
 	}
@@ -273,16 +273,21 @@ func tcgetattr(fd int, termios *syscall.Termios) (err error) {
 	return
 }
 
-// C.FD_SET
-func fd_set(fd int, fds *syscall.FdSet) {
-	idx := fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
-	pos := fd % (syscall.FD_SETSIZE / len(fds.Bits))
+// fdGet returns index and offset of fd in fds
+func fdGet(fd int, fds *syscall.FdSet) (index, offset int) {
+	index = fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
+	offset = fd % (syscall.FD_SETSIZE / len(fds.Bits))
+	return
+}
+
+// fdSet implements FD_SET macro
+func fdSet(fd int, fds *syscall.FdSet) {
+	idx, pos := fdGet(fd, fds)
 	fds.Bits[idx] = 1 << uint(pos)
 }
 
-// C.FD_ISSET
-func fd_isset(fd int, fds *syscall.FdSet) bool {
-	idx := fd / (syscall.FD_SETSIZE / len(fds.Bits)) % len(fds.Bits)
-	pos := fd % (syscall.FD_SETSIZE / len(fds.Bits))
+// fdIsSet implements FD_ISSET macro
+func fdIsSet(fd int, fds *syscall.FdSet) bool {
+	idx, pos := fdGet(fd, fds)
 	return fds.Bits[idx]&(1<<uint(pos)) != 0
 }
