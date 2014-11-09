@@ -24,7 +24,7 @@ Bit access:
 Supported formats
 -----------------
 *   TCP
-*   Serial (RTU, ASCII) - Linux only
+*   Serial (RTU, ASCII)
 
 Usage
 -----
