@@ -18,16 +18,6 @@ import (
 
 const port = "COM4"
 
-const (
-	serialOneStopBit   = 0
-	serialOne5StopBits = 1
-	serialOTwoStopBits = 2
-
-	serialNoParity   = 0
-	serialOddParity  = 1
-	serialEvenParity = 2
-)
-
 func main() {
 	handle, err := syscall.CreateFile(syscall.StringToUTF16Ptr(port),
 		syscall.GENERIC_READ|syscall.GENERIC_WRITE,
@@ -46,8 +36,8 @@ func main() {
 	var dcb C.DCB
 	dcb.BaudRate = 9600
 	dcb.ByteSize = 8
-	dcb.StopBits = serialOneStopBit
-	dcb.Parity = serialNoParity
+	dcb.StopBits = C.ONESTOPBIT
+	dcb.Parity = C.NOPARITY
 	if C.SetCommState(C.HANDLE(handle), &dcb) == 0 {
 		fmt.Printf("set comm state error %v\n", syscall.GetLastError())
 		return
