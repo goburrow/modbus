@@ -20,8 +20,7 @@ func TestRTUClientReadCoils(t *testing.T) {
 }
 
 func TestRTUClientAdvancedUsage(t *testing.T) {
-	var handler modbus.RTUClientHandler
-	handler.Address = testRTUDevice
+	handler := modbus.NewRTUClientHandler(testRTUDevice)
 	handler.BaudRate = 19200
 	handler.DataBits = 8
 	handler.Parity = "E"
@@ -34,7 +33,7 @@ func TestRTUClientAdvancedUsage(t *testing.T) {
 	}
 	defer handler.Close()
 
-	client := modbus.RTUClientWithHandler(&handler)
+	client := modbus.NewRTUClient(handler)
 	results, err := client.ReadDiscreteInputs(15, 2)
 	if err != nil || results == nil {
 		t.Fatal(err, results)

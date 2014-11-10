@@ -22,22 +22,31 @@ const (
 	tcpTimeoutMillis = 5000
 )
 
+// TCPClientHandler implements Packager and Transporter interface
 type TCPClientHandler struct {
 	tcpPackager
 	tcpTransporter
 }
 
-func TCPClient(address string) Client {
+// NewTCPClientHandler allocates a new TCPClientHandler
+func NewTCPClientHandler(address string) *TCPClientHandler {
 	handler := &TCPClientHandler{}
 	handler.Address = address
-	return TCPClientWithHandler(handler)
+	return handler
 }
 
-func TCPClientWithHandler(handler *TCPClientHandler) Client {
+// NewTCPClient creates TCP client with given handler
+func NewTCPClient(handler *TCPClientHandler) Client {
 	return NewClient(handler, handler)
 }
 
-// Implements Encoder and Decoder interface
+// TCPClient creates TCP client with default handler and given connect string
+func TCPClient(address string) Client {
+	handler := NewTCPClientHandler(address)
+	return NewTCPClient(handler)
+}
+
+// tcpPackager implements Packager interface
 type tcpPackager struct {
 	// For synchronization between messages of server & client
 	transactionId uint16

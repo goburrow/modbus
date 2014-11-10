@@ -44,8 +44,7 @@ results, err = client.ReadCoils(2, 1)
 Advanced usage:
 ```go
 // Modbus TCP
-var handler modbus.TCPClientHandler
-handler.Address = "localhost:502"
+handler := modbus.NewTCPClientHandler("localhost:502")
 handler.Timeout = 10 * time.Second
 handler.SlaveId = 0xFF
 handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
@@ -53,7 +52,7 @@ handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 err := handler.Connect()
 defer handler.Close()
 
-client := modbus.TCPClientWithHandler(&handler)
+client := modbus.NewTCPClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 results, err = client.WriteMultipleRegisters(1, 2, []byte{0, 3, 0, 4})
 results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
@@ -61,8 +60,7 @@ results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
 
 ```go
 // Modbus RTU/ASCII
-var handler modbus.RTUClientHandler
-handler.Address = "/dev/ttyUSB0"
+handler := modbus.NewRTUClientHandler("/dev/ttyUSB0")
 handler.BaudRate = 115200
 handler.DataBits = 8
 handler.Parity = "N"
@@ -73,7 +71,7 @@ handler.Timeout = 5 * time.Second
 err := handler.Connect()
 defer handler.Close()
 
-client := modbus.RTUClientWithHandler(&handler)
+client := modbus.NewRTUClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 ```
 

@@ -20,8 +20,7 @@ func TestASCIIClientReadCoils(t *testing.T) {
 }
 
 func TestASCIIClientAdvancedUsage(t *testing.T) {
-	var handler modbus.ASCIIClientHandler
-	handler.Address = testAsciiDevice
+	handler := modbus.NewASCIIClientHandler(testAsciiDevice)
 	handler.BaudRate = 19200
 	handler.DataBits = 8
 	handler.Parity = "E"
@@ -34,7 +33,7 @@ func TestASCIIClientAdvancedUsage(t *testing.T) {
 	}
 	defer handler.Close()
 
-	client := modbus.ASCIIClientWithHandler(&handler)
+	client := modbus.NewASCIIClient(handler)
 	results, err := client.ReadDiscreteInputs(15, 2)
 	if err != nil || results == nil {
 		t.Fatal(err, results)

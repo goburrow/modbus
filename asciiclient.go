@@ -18,22 +18,31 @@ const (
 	hexTable = "0123456789ABCDEF"
 )
 
+// ASCIIClientHandler implements Packager and Transporter interface
 type ASCIIClientHandler struct {
 	asciiPackager
 	asciiSerialTransporter
 }
 
-func ASCIIClient(address string) Client {
+// NewASCIIClientHandler allocates and initializes a ASCIIClientHandler
+func NewASCIIClientHandler(address string) *ASCIIClientHandler {
 	handler := &ASCIIClientHandler{}
 	handler.Address = address
-	return ASCIIClientWithHandler(handler)
+	return handler
 }
 
-func ASCIIClientWithHandler(handler *ASCIIClientHandler) Client {
+// NewASCIIClient creates ASCII client with given handler
+func NewASCIIClient(handler *ASCIIClientHandler) Client {
 	return NewClient(handler, handler)
 }
 
-// Implements Encoder and Decoder interface
+// ASCIIClient creates ASCII client with default handler and given connect string
+func ASCIIClient(address string) Client {
+	handler := NewASCIIClientHandler(address)
+	return NewASCIIClient(handler)
+}
+
+// asciiPackager implements Packager interface
 type asciiPackager struct {
 	SlaveId byte
 }

@@ -12,23 +12,31 @@ const (
 	rtuMaxLength = 256
 )
 
+// RTUClientHandler implements Packager and Transporter interface
 type RTUClientHandler struct {
 	rtuPackager
-	// TODO: sharing serial transporter with Modbus ASCII client
 	rtuSerialTransporter
 }
 
-func RTUClient(address string) Client {
+// NewRTUClientHandler allocates and initializes a RTUClientHandler
+func NewRTUClientHandler(address string) *RTUClientHandler {
 	handler := &RTUClientHandler{}
 	handler.Address = address
-	return RTUClientWithHandler(handler)
+	return handler
 }
 
-func RTUClientWithHandler(handler *RTUClientHandler) Client {
+// NewRTUClient creates RTU client with given handler
+func NewRTUClient(handler *RTUClientHandler) Client {
 	return NewClient(handler, handler)
 }
 
-// Implements Encoder and Decoder interface
+// RTUClient creates RTU client with default handler and given connect string
+func RTUClient(address string) Client {
+	handler := NewRTUClientHandler(address)
+	return NewRTUClient(handler)
+}
+
+// rtuPackager implements Packager interface
 type rtuPackager struct {
 	SlaveId byte
 }
