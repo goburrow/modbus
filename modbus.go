@@ -36,6 +36,13 @@ const (
 	ExceptionCodeGatewayTargetDeviceFailedToRespond = 11
 )
 
+// ModbusError implements error interface
+type ModbusError struct {
+	FunctionCode  byte
+	ExceptionCode byte
+}
+
+// Error converts known modbus exception code to error message
 func (e *ModbusError) Error() string {
 	var name string
 	switch e.ExceptionCode {
@@ -63,18 +70,20 @@ func (e *ModbusError) Error() string {
 	return fmt.Sprintf("modbus: exception '%v' (%s), function '%v'", e.ExceptionCode, name, e.FunctionCode)
 }
 
-// PDU
+// ProtocolDataUnit (PDU) is independent of underlying communication layers
 type ProtocolDataUnit struct {
 	FunctionCode byte
 	Data         []byte
 }
 
+// Packager specifies the communication layer
 type Packager interface {
 	Encode(pdu *ProtocolDataUnit) (adu []byte, err error)
 	Decode(adu []byte) (pdu *ProtocolDataUnit, err error)
 	Verify(aduRequest []byte, aduResponse []byte) (err error)
 }
 
+// Transporter specifies the transport layer
 type Transporter interface {
 	Send(aduRequest []byte) (aduResponse []byte, err error)
 }

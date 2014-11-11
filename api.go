@@ -3,12 +3,6 @@
 // of the BSD license.  See the LICENSE file for details.
 package modbus
 
-// ModbusError implements error interface
-type ModbusError struct {
-	FunctionCode  byte
-	ExceptionCode byte
-}
-
 type Client interface {
 	// Bit access
 
