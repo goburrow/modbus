@@ -4,21 +4,9 @@
 package modbus
 
 import (
+	"bytes"
 	"testing"
 )
-
-// TODO sharing test methods?
-func rtuClientSerialBytesEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 func TestRTUEncoding(t *testing.T) {
 	encoder := rtuPackager{}
@@ -33,7 +21,7 @@ func TestRTUEncoding(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []byte{0x01, 0x03, 0x50, 0x00, 0x00, 0x18, 0x54, 0xC0}
-	if !rtuClientSerialBytesEqual(expected, adu) {
+	if !bytes.Equal(expected, adu) {
 		t.Fatalf("adu: expected %v, actual %v", expected, adu)
 	}
 }
@@ -51,7 +39,7 @@ func TestRTUDecoding(t *testing.T) {
 		t.Fatalf("Function code: expected %v, actual %v", 16, pdu.FunctionCode)
 	}
 	expected := []byte{0x8A, 0x00, 0x00, 0x03}
-	if !rtuClientSerialBytesEqual(expected, pdu.Data) {
+	if !bytes.Equal(expected, pdu.Data) {
 		t.Fatalf("Data: expected %v, actual %v", expected, pdu.Data)
 	}
 }

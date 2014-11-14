@@ -4,20 +4,9 @@
 package modbus
 
 import (
+	"bytes"
 	"testing"
 )
-
-func bytesEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 func TestTCPEncoding(t *testing.T) {
 	packager := tcpPackager{}
@@ -31,7 +20,7 @@ func TestTCPEncoding(t *testing.T) {
 	}
 
 	expected := []byte{0, 1, 0, 0, 0, 6, 0, 3, 0, 4, 0, 3}
-	if !bytesEqual(expected, adu) {
+	if !bytes.Equal(expected, adu) {
 		t.Fatalf("Expected %v, actual %v", expected, adu)
 	}
 }
@@ -51,7 +40,7 @@ func TestTCPDecoding(t *testing.T) {
 		t.Fatalf("Function code: expected %v, actual %v", 3, pdu.FunctionCode)
 	}
 	expected := []byte{0, 120, 0, 3}
-	if !bytesEqual(expected, pdu.Data) {
+	if !bytes.Equal(expected, pdu.Data) {
 		t.Fatalf("Data: expected %v, actual %v", expected, adu)
 	}
 }

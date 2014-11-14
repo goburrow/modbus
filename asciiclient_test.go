@@ -4,21 +4,9 @@
 package modbus
 
 import (
+	"bytes"
 	"testing"
 )
-
-// TODO sharing test methods?
-func serialBytesEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 func TestAsciiEncoding(t *testing.T) {
 	encoder := asciiPackager{}
@@ -33,7 +21,7 @@ func TestAsciiEncoding(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []byte(":1103006B00037E\r\n")
-	if !serialBytesEqual(expected, adu) {
+	if !bytes.Equal(expected, adu) {
 		t.Fatalf("adu actual: %v, expected %v", adu, expected)
 	}
 }
@@ -52,7 +40,7 @@ func TestAsciiDecoding(t *testing.T) {
 		t.Fatalf("Function code: expected %v, actual %v", 15, pdu.FunctionCode)
 	}
 	expected := []byte{0x13, 0x89, 0, 0x0A}
-	if !serialBytesEqual(expected, pdu.Data) {
+	if !bytes.Equal(expected, pdu.Data) {
 		t.Fatalf("Data: expected %v, actual %v", expected, pdu.Data)
 	}
 }
