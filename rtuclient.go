@@ -25,15 +25,10 @@ func NewRTUClientHandler(address string) *RTUClientHandler {
 	return handler
 }
 
-// NewRTUClient creates RTU client with given handler
-func NewRTUClient(handler *RTUClientHandler) Client {
-	return NewClient(handler, handler)
-}
-
 // RTUClient creates RTU client with default handler and given connect string
 func RTUClient(address string) Client {
 	handler := NewRTUClientHandler(address)
-	return NewRTUClient(handler)
+	return NewClient(handler)
 }
 
 // rtuPackager implements Packager interface

@@ -52,7 +52,7 @@ handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 err := handler.Connect()
 defer handler.Close()
 
-client := modbus.NewTCPClient(handler)
+client := modbus.NewClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 results, err = client.WriteMultipleRegisters(1, 2, []byte{0, 3, 0, 4})
 results, err = client.WriteMultipleCoils(5, 10, []byte{4, 3})
@@ -71,7 +71,7 @@ handler.Timeout = 5 * time.Second
 err := handler.Connect()
 defer handler.Close()
 
-client := modbus.NewRTUClient(handler)
+client := modbus.NewClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 ```
 

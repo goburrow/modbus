@@ -35,15 +35,10 @@ func NewTCPClientHandler(address string) *TCPClientHandler {
 	return handler
 }
 
-// NewTCPClient creates TCP client with given handler
-func NewTCPClient(handler *TCPClientHandler) Client {
-	return NewClient(handler, handler)
-}
-
 // TCPClient creates TCP client with default handler and given connect string
 func TCPClient(address string) Client {
 	handler := NewTCPClientHandler(address)
-	return NewTCPClient(handler)
+	return NewClient(handler)
 }
 
 // tcpPackager implements Packager interface

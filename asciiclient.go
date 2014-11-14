@@ -31,15 +31,10 @@ func NewASCIIClientHandler(address string) *ASCIIClientHandler {
 	return handler
 }
 
-// NewASCIIClient creates ASCII client with given handler
-func NewASCIIClient(handler *ASCIIClientHandler) Client {
-	return NewClient(handler, handler)
-}
-
 // ASCIIClient creates ASCII client with default handler and given connect string
 func ASCIIClient(address string) Client {
 	handler := NewASCIIClientHandler(address)
-	return NewASCIIClient(handler)
+	return NewClient(handler)
 }
 
 // asciiPackager implements Packager interface

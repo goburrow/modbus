@@ -70,7 +70,7 @@ func TestTCPClientReadFIFOQueue(t *testing.T) {
 	handler := modbus.NewTCPClientHandler(testTCPServer)
 	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 
-	client := modbus.NewTCPClient(handler)
+	client := modbus.NewClient(handler)
 	ClientTestReadFIFOQueue(t, client)
 }
 
@@ -82,7 +82,7 @@ func TestTCPClientAdvancedUsage(t *testing.T) {
 	handler.Connect()
 	defer handler.Close()
 
-	client := modbus.NewTCPClient(handler)
+	client := modbus.NewClient(handler)
 	results, err := client.ReadDiscreteInputs(15, 2)
 	if err != nil || results == nil {
 		t.Fatal(err, results)

@@ -8,12 +8,24 @@ import (
 	"fmt"
 )
 
+// ClientHandler is the interface that groups the Packager and Transporter methods
+type ClientHandler interface {
+	Packager
+	Transporter
+}
+
 type client struct {
 	packager    Packager
 	transporter Transporter
 }
 
-func NewClient(packager Packager, transporter Transporter) Client {
+// NewClient creates a new modbus client with given backend handler
+func NewClient(handler ClientHandler) Client {
+	return &client{packager: handler, transporter: handler}
+}
+
+// NewClient2 creates a new modbus client with given backend packager and transporter
+func NewClient2(packager Packager, transporter Transporter) Client {
 	return &client{packager: packager, transporter: transporter}
 }
 

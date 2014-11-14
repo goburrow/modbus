@@ -33,7 +33,7 @@ func TestASCIIClientAdvancedUsage(t *testing.T) {
 	}
 	defer handler.Close()
 
-	client := modbus.NewASCIIClient(handler)
+	client := modbus.NewClient(handler)
 	results, err := client.ReadDiscreteInputs(15, 2)
 	if err != nil || results == nil {
 		t.Fatal(err, results)
