@@ -1,6 +1,10 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
 // of the BSD license.  See the LICENSE file for details.
+
+/*
+Package modbus provides a client for MODBUS TCP and RTU/ASCII.
+*/
 package modbus
 
 import (
