@@ -14,7 +14,7 @@ const (
 	serialTimeoutMillis = 5000
 )
 
-// SerialConfig is common configuration for serial port.
+// serialConfig is common configuration for serial port.
 type serialConfig struct {
 	// Device path (/dev/ttyS0)
 	Address string
@@ -32,6 +32,7 @@ type serialConfig struct {
 type serialController interface {
 	Connect() (err error)
 	Close() (err error)
+
 	isConnected() bool
 	read(b []byte) (n int, err error)
 	write(b []byte) (n int, err error)
@@ -42,10 +43,13 @@ type serialController interface {
 type serialTransporter struct {
 	// Serial port configuration
 	serialConfig
-	// Platform-dependent serial controller
+	// Platform-dependent data structure for serial port
 	serialPort
 
 	// Read timeout
 	Timeout time.Duration
 	Logger  *log.Logger
 }
+
+// Ensure serialTransporter also implements serialController interface
+var _ serialController = (*serialTransporter)(nil)
