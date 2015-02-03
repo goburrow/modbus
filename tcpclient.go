@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -23,26 +23,26 @@ const (
 	tcpTimeoutMillis = 5000
 )
 
-// TCPClientHandler implements Packager and Transporter interface
+// TCPClientHandler implements Packager and Transporter interface.
 type TCPClientHandler struct {
 	tcpPackager
 	tcpTransporter
 }
 
-// NewTCPClientHandler allocates a new TCPClientHandler
+// NewTCPClientHandler allocates a new TCPClientHandler.
 func NewTCPClientHandler(address string) *TCPClientHandler {
 	handler := &TCPClientHandler{}
 	handler.Address = address
 	return handler
 }
 
-// TCPClient creates TCP client with default handler and given connect string
+// TCPClient creates TCP client with default handler and given connect string.
 func TCPClient(address string) Client {
 	handler := NewTCPClientHandler(address)
 	return NewClient(handler)
 }
 
-// tcpPackager implements Packager interface
+// tcpPackager implements Packager interface.
 type tcpPackager struct {
 	// For synchronization between messages of server & client
 	transactionId uint16
@@ -92,7 +92,7 @@ func (mb *tcpPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	return
 }
 
-// Verify confirm transaction, protocol and unit id
+// Verify confirms transaction, protocol and unit id.
 func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
 	// Transaction id
 	responseVal := binary.BigEndian.Uint16(aduResponse)
@@ -136,7 +136,7 @@ func (mb *tcpPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	return
 }
 
-// tcpTransporter implements Transporter interface
+// tcpTransporter implements Transporter interface.
 type tcpTransporter struct {
 	// Connect string
 	Address string
@@ -149,7 +149,7 @@ type tcpTransporter struct {
 	conn net.Conn
 }
 
-// Send sends data to server and ensures response length is greater than header length
+// Send sends data to server and ensures response length is greater than header length.
 func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
 	var data [tcpMaxLength]byte
 
@@ -209,7 +209,7 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	return
 }
 
-// Connect establishes a new connection to the address in Address
+// Connect establishes a new connection to the address in Address.
 // Connect and Close are exported so that multiple requests can be done with one session
 func (mb *tcpTransporter) Connect() (err error) {
 	if mb.Logger != nil {
@@ -224,7 +224,7 @@ func (mb *tcpTransporter) Connect() (err error) {
 	return
 }
 
-// Closes current connection
+// Close closes current connection.
 func (mb *tcpTransporter) Close() (err error) {
 	if mb.conn != nil {
 		err = mb.conn.Close()
@@ -236,7 +236,8 @@ func (mb *tcpTransporter) Close() (err error) {
 	return
 }
 
-// These methods must only be called after Connect()
+// These methods must only be called after Connect().
+
 func (mb *tcpTransporter) write(b []byte) (err error) {
 	var n int
 	if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
@@ -261,8 +262,8 @@ func (mb *tcpTransporter) read(b []byte) (n int, err error) {
 	return
 }
 
-// Flushes pending data in the connection,
-// returns io.EOF if connection is closed
+// flush flushes pending data in the connection,
+// returns io.EOF if connection is closed.
 func (mb *tcpTransporter) flush(b []byte) (err error) {
 	if err = mb.conn.SetReadDeadline(time.Now()); err != nil {
 		return

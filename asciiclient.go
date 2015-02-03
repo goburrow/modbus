@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -19,26 +19,26 @@ const (
 	hexTable = "0123456789ABCDEF"
 )
 
-// ASCIIClientHandler implements Packager and Transporter interface
+// ASCIIClientHandler implements Packager and Transporter interface.
 type ASCIIClientHandler struct {
 	asciiPackager
 	asciiSerialTransporter
 }
 
-// NewASCIIClientHandler allocates and initializes a ASCIIClientHandler
+// NewASCIIClientHandler allocates and initializes a ASCIIClientHandler.
 func NewASCIIClientHandler(address string) *ASCIIClientHandler {
 	handler := &ASCIIClientHandler{}
 	handler.Address = address
 	return handler
 }
 
-// ASCIIClient creates ASCII client with default handler and given connect string
+// ASCIIClient creates ASCII client with default handler and given connect string.
 func ASCIIClient(address string) Client {
 	handler := NewASCIIClientHandler(address)
 	return NewClient(handler)
 }
 
-// asciiPackager implements Packager interface
+// asciiPackager implements Packager interface.
 type asciiPackager struct {
 	SlaveId byte
 }
@@ -76,7 +76,7 @@ func (mb *asciiPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	return
 }
 
-// Verify verifies response length, frame boundary and slave id
+// Verify verifies response length, frame boundary and slave id.
 func (mb *asciiPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
 	length := len(aduResponse)
 	// Minimum size (including address, function and LRC)
@@ -117,7 +117,7 @@ func (mb *asciiPackager) Verify(aduRequest []byte, aduResponse []byte) (err erro
 	return
 }
 
-// Decode extracts PDU from ASCII frame and verify LRC
+// Decode extracts PDU from ASCII frame and verify LRC.
 func (mb *asciiPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	pdu = &ProtocolDataUnit{}
 	// Slave address
@@ -152,7 +152,7 @@ func (mb *asciiPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	return
 }
 
-// asciiSerialTransporter implements Transporter interface
+// asciiSerialTransporter implements Transporter interface.
 type asciiSerialTransporter struct {
 	serialTransporter
 }
@@ -198,7 +198,7 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 }
 
 // writeHex encodes byte to string in hexadecimal, e.g. 0xA5 => "A5"
-// (encoding/hex only supports lowercase string)
+// (encoding/hex only supports lowercase string).
 func writeHex(buf *bytes.Buffer, value []byte) (err error) {
 	var str [2]byte
 	for _, v := range value {
@@ -212,7 +212,7 @@ func writeHex(buf *bytes.Buffer, value []byte) (err error) {
 	return
 }
 
-// readHex decodes hexa string to byte, e.g. "8C" => 0x8C
+// readHex decodes hexa string to byte, e.g. "8C" => 0x8C.
 func readHex(data []byte) (value byte, err error) {
 	var dst [1]byte
 	if _, err = hex.Decode(dst[:], data[0:2]); err != nil {

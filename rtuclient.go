@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -13,26 +13,26 @@ const (
 	rtuMaxLength = 256
 )
 
-// RTUClientHandler implements Packager and Transporter interface
+// RTUClientHandler implements Packager and Transporter interface.
 type RTUClientHandler struct {
 	rtuPackager
 	rtuSerialTransporter
 }
 
-// NewRTUClientHandler allocates and initializes a RTUClientHandler
+// NewRTUClientHandler allocates and initializes a RTUClientHandler.
 func NewRTUClientHandler(address string) *RTUClientHandler {
 	handler := &RTUClientHandler{}
 	handler.Address = address
 	return handler
 }
 
-// RTUClient creates RTU client with default handler and given connect string
+// RTUClient creates RTU client with default handler and given connect string.
 func RTUClient(address string) Client {
 	handler := NewRTUClientHandler(address)
 	return NewClient(handler)
 }
 
-// rtuPackager implements Packager interface
+// rtuPackager implements Packager interface.
 type rtuPackager struct {
 	SlaveId byte
 }
@@ -64,7 +64,7 @@ func (mb *rtuPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	return
 }
 
-// Verify verifies response length and slave id
+// Verify verifies response length and slave id.
 func (mb *rtuPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
 	length := len(aduResponse)
 	// Minimum size (including address, function and CRC)
@@ -80,7 +80,7 @@ func (mb *rtuPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 	return
 }
 
-// Decode extracts PDU from RTU frame and verify CRC
+// Decode extracts PDU from RTU frame and verify CRC.
 func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	length := len(adu)
 	// Calculate checksum
@@ -98,7 +98,7 @@ func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	return
 }
 
-// asciiSerialTransporter implements Transporter interface
+// asciiSerialTransporter implements Transporter interface.
 type rtuSerialTransporter struct {
 	// Extended from serialTransporter
 	serialTransporter

@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-// ClientHandler is the interface that groups the Packager and Transporter methods
+// ClientHandler is the interface that groups the Packager and Transporter methods.
 type ClientHandler interface {
 	Packager
 	Transporter
@@ -20,12 +20,12 @@ type client struct {
 	transporter Transporter
 }
 
-// NewClient creates a new modbus client with given backend handler
+// NewClient creates a new modbus client with given backend handler.
 func NewClient(handler ClientHandler) Client {
 	return &client{packager: handler, transporter: handler}
 }
 
-// NewClient2 creates a new modbus client with given backend packager and transporter
+// NewClient2 creates a new modbus client with given backend packager and transporter.
 func NewClient2(packager Packager, transporter Transporter) Client {
 	return &client{packager: packager, transporter: transporter}
 }
@@ -434,7 +434,7 @@ func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
 
 // Helpers
 
-// Send a request and check possible exception in the response
+// send sends request and checks possible exception in the response.
 func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, err error) {
 	aduRequest, err := mb.packager.Encode(request)
 	if err != nil {
@@ -464,7 +464,7 @@ func (mb *client) send(request *ProtocolDataUnit) (response *ProtocolDataUnit, e
 	return
 }
 
-// Creates a sequence of uint16 data
+// dataBlock creates a sequence of uint16 data.
 func dataBlock(value ...uint16) []byte {
 	data := make([]byte, 2*len(value))
 	for i, v := range value {
@@ -473,7 +473,7 @@ func dataBlock(value ...uint16) []byte {
 	return data
 }
 
-// Creates a sequence of uint16 data and append the suffix plus its length
+// dataBlockSuffix creates a sequence of uint16 data and append the suffix plus its length.
 func dataBlockSuffix(suffix []byte, value ...uint16) []byte {
 	length := 2 * len(value)
 	data := make([]byte, length+1+len(suffix))

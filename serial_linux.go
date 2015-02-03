@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -105,12 +105,12 @@ func (mb *serialTransporter) Close() (err error) {
 	return
 }
 
-// IsConnected returns true if serial port has been opened
+// isConnected returns true if serial port has been opened.
 func (mb *serialTransporter) isConnected() bool {
 	return mb.file != nil
 }
 
-// Read reads from serial port, blocked until data received or timeout after Timeout
+// Read reads from serial port, blocked until data received or timeout after Timeout.
 func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	var rfds syscall.FdSet
 	var timeout syscall.Timeval
@@ -138,7 +138,7 @@ func (mb *serialTransporter) write(b []byte) (n int, err error) {
 	return
 }
 
-// getTermiosSetting saves current termios setting.
+// backupTermios saves current termios setting.
 // Make sure that device file has been opened before calling this function.
 func (mb *serialTransporter) backupTermios() {
 	oldTermios := &syscall.Termios{}
@@ -153,7 +153,7 @@ func (mb *serialTransporter) backupTermios() {
 	}
 }
 
-// resetTermiosSetting restores backed up termios setting.
+// restoreTermios restores backed up termios setting.
 // Make sure that device file has been opened before calling this function.
 func (mb *serialTransporter) restoreTermios() {
 	if mb.oldTermios == nil {
@@ -244,8 +244,8 @@ func newTermios(config *serialConfig) (termios *syscall.Termios, err error) {
 	return
 }
 
-// Set terminal file descriptor parameters.
-// See man tcsetattr(3)
+// tcsetattr sets terminal file descriptor parameters.
+// See man tcsetattr(3).
 func tcsetattr(fd int, termios *syscall.Termios) (err error) {
 	r, _, errno := syscall.Syscall(uintptr(syscall.SYS_IOCTL),
 		uintptr(fd), uintptr(syscall.TCSETS), uintptr(unsafe.Pointer(termios)))
@@ -259,8 +259,8 @@ func tcsetattr(fd int, termios *syscall.Termios) (err error) {
 	return
 }
 
-// Get terminal file descriptor parameters.
-// See man tcgetattr(3)
+// tcgetattr gets terminal file descriptor parameters.
+// See man tcgetattr(3).
 func tcgetattr(fd int, termios *syscall.Termios) (err error) {
 	r, _, errno := syscall.Syscall(uintptr(syscall.SYS_IOCTL),
 		uintptr(fd), uintptr(syscall.TCGETS), uintptr(unsafe.Pointer(termios)))

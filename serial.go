@@ -1,6 +1,6 @@
 // Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
 // This software may be modified and distributed under the terms
-// of the BSD license.  See the LICENSE file for details.
+// of the BSD license. See the LICENSE file for details.
 
 package modbus
 
@@ -39,11 +39,11 @@ type serialController interface {
 }
 
 // serialTransporter has configuration and I/O controller and must
-// implicitly implement serialController interface
+// implicitly implement serialController interface.
 type serialTransporter struct {
-	// Serial port configuration
+	// Serial port configuration.
 	serialConfig
-	// Platform-dependent data structure for serial port
+	// serialPort is platform-dependent data structure for serial port.
 	serialPort
 
 	// Read timeout
@@ -51,5 +51,5 @@ type serialTransporter struct {
 	Logger  *log.Logger
 }
 
-// Ensure serialTransporter also implements serialController interface
+// Ensure serialTransporter also implements serialController interface.
 var _ serialController = (*serialTransporter)(nil)
