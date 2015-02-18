@@ -113,13 +113,11 @@ func (mb *serialTransporter) isConnected() bool {
 // Read reads from serial port, blocked until data received or timeout after Timeout.
 func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	var rfds syscall.FdSet
-	var timeout syscall.Timeval
 
 	fd := int(mb.file.Fd())
 	fdSet(fd, &rfds)
 
-	timeout.Sec = mb.Timeout.Nanoseconds() / 1E9
-	timeout.Usec = (mb.Timeout.Nanoseconds() % 1E9) / 1E3
+	timeout := syscall.NsecToTimeval(mb.Timeout.Nanoseconds())
 
 	if _, err = syscall.Select(fd+1, &rfds, nil, nil, &timeout); err != nil {
 		return
