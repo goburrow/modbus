@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -153,12 +154,7 @@ type tcpTransporter struct {
 func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
 	var data [tcpMaxLength]byte
 
-	if mb.conn != nil {
-		// Flush current data and check if the connection is alive
-		if err = mb.flush(data[:]); err != nil {
-			return
-		}
-	} else {
+	if mb.conn == nil {
 		// Establish a new connection and close it when complete
 		if err = mb.Connect(); err != nil {
 			return
@@ -166,45 +162,38 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		defer mb.Close()
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+		mb.Logger.Printf("modbus: sending % x\n", aduRequest)
 	}
-	if err = mb.write(aduRequest); err != nil {
+	if err = mb.conn.SetDeadline(time.Now().Add(mb.Timeout)); err != nil {
+		return
+	}
+	if _, err = mb.conn.Write(aduRequest); err != nil {
 		return
 	}
 	// Read header first
-	var n int
-	if n, err = mb.read(data[:tcpHeaderLength]); err != nil {
-		return
-	}
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received header %v\n", data[:tcpHeaderLength])
-	}
-	if n != tcpHeaderLength {
-		err = fmt.Errorf("modbus: response header size '%v' does not match expected '%v'", n, tcpHeaderLength)
+	if _, err = io.ReadFull(mb.conn, data[:tcpHeaderLength]); err != nil {
 		return
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
 	length := int(binary.BigEndian.Uint16(data[4:]))
 	if length <= 0 {
+		mb.flush(data[:])
 		err = fmt.Errorf("modbus: length in response header '%v' must not be zero", length)
 		return
 	}
-	if length > (tcpMaxLength - tcpHeaderLength + 1) {
+	if length > (tcpMaxLength - (tcpHeaderLength - 1)) {
+		mb.flush(data[:])
 		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderLength+1)
 		return
 	}
 	// Skip unit id
-	length = tcpHeaderLength - 1 + length
-	idx := tcpHeaderLength
-	for idx < length {
-		if n, err = mb.read(data[idx:length]); err != nil {
-			return
-		}
-		idx += n
+	length += tcpHeaderLength - 1
+	if _, err = io.ReadFull(mb.conn, data[tcpHeaderLength:length]); err != nil {
+		return
 	}
-	aduResponse = data[:idx]
+	aduResponse = data[:length]
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received %v\n", aduResponse)
+		mb.Logger.Printf("modbus: received % x\n", aduResponse)
 	}
 	return
 }
@@ -212,9 +201,6 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 // Connect establishes a new connection to the address in Address.
 // Connect and Close are exported so that multiple requests can be done with one session
 func (mb *tcpTransporter) Connect() (err error) {
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: connecting '%v'\n", mb.Address)
-	}
 	// Timeout must be specified
 	if mb.Timeout <= 0 {
 		mb.Timeout = tcpTimeoutMillis * time.Millisecond
@@ -229,36 +215,7 @@ func (mb *tcpTransporter) Close() (err error) {
 	if mb.conn != nil {
 		err = mb.conn.Close()
 		mb.conn = nil
-		if mb.Logger != nil {
-			mb.Logger.Printf("modbus: closed connection '%v'\n", mb.Address)
-		}
 	}
-	return
-}
-
-// These methods must only be called after Connect().
-
-func (mb *tcpTransporter) write(b []byte) (err error) {
-	var n int
-	if err = mb.conn.SetWriteDeadline(time.Now().Add(mb.Timeout)); err != nil {
-		return
-	}
-	if n, err = mb.conn.Write(b); err != nil {
-		return
-	}
-	// Is this checking necessary?
-	if n != len(b) {
-		err = fmt.Errorf("modbus: sent length '%v' does not match expected '%v'", n, len(b))
-		return
-	}
-	return
-}
-
-func (mb *tcpTransporter) read(b []byte) (n int, err error) {
-	if err = mb.conn.SetReadDeadline(time.Now().Add(mb.Timeout)); err != nil {
-		return
-	}
-	n, err = mb.conn.Read(b)
 	return
 }
 
