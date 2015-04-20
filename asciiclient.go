@@ -170,10 +170,10 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 	if mb.Logger != nil {
 		mb.Logger.Printf("modbus: sending %s\n", aduRequest)
 	}
-	var n int
-	if n, err = mb.port.Write(aduRequest); err != nil {
+	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
+	var n int
 	var data [asciiMaxLength]byte
 	length := 0
 	for {

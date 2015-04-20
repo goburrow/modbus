@@ -13,16 +13,16 @@ import (
 )
 
 const (
-	testAsciiDevice = "/dev/pts/7"
+	testASCIIDevice = "/dev/pts/6"
 )
 
 func TestASCIIClientReadCoils(t *testing.T) {
-	client := modbus.ASCIIClient(testAsciiDevice)
+	client := modbus.ASCIIClient(testASCIIDevice)
 	ClientTestReadCoils(t, client)
 }
 
 func TestASCIIClientAdvancedUsage(t *testing.T) {
-	handler := modbus.NewASCIIClientHandler(testAsciiDevice)
+	handler := modbus.NewASCIIClientHandler(testASCIIDevice)
 	handler.BaudRate = 19200
 	handler.DataBits = 8
 	handler.Parity = "E"
