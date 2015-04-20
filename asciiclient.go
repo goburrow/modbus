@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"log"
 )
 
 const (
@@ -154,13 +155,13 @@ func (mb *asciiPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 
 // asciiSerialTransporter implements Transporter interface.
 type asciiSerialTransporter struct {
-	serialTransporter
+	serialPort
+
+	Logger *log.Logger
 }
 
 func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if mb.isConnected() {
-		// flush current data pending in serial port
-	} else {
+	if !mb.isConnected {
 		if err = mb.Connect(); err != nil {
 			return
 		}
@@ -170,13 +171,13 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 		mb.Logger.Printf("modbus: sending %s\n", aduRequest)
 	}
 	var n int
-	if n, err = mb.write(aduRequest); err != nil {
+	if n, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
 	var data [asciiMaxLength]byte
 	length := 0
 	for {
-		if n, err = mb.read(data[length:]); err != nil {
+		if n, err = mb.port.Read(data[length:]); err != nil {
 			return
 		}
 		length += n

@@ -6,6 +6,8 @@ package modbus
 
 import (
 	"fmt"
+	"io"
+	"log"
 )
 
 const (
@@ -100,33 +102,32 @@ func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 
 // asciiSerialTransporter implements Transporter interface.
 type rtuSerialTransporter struct {
-	// Extended from serialTransporter
-	serialTransporter
+	serialPort
+
+	Logger *log.Logger
 }
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if mb.isConnected() {
-		// flush current data pending in serial port
-	} else {
+	if !mb.isConnected {
 		if err = mb.Connect(); err != nil {
 			return
 		}
 		defer mb.Close()
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+		mb.Logger.Printf("modbus: sending % x\n", aduRequest)
 	}
-	var n int
-	if n, err = mb.write(aduRequest); err != nil {
+	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
+	var n int
 	var data [rtuMaxLength]byte
-	if n, err = mb.read(data[:]); err != nil {
+	if n, err = io.ReadAtLeast(mb.port, data[:], rtuMinLength); err != nil {
 		return
 	}
 	aduResponse = data[:n]
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received %v\n", aduResponse)
+		mb.Logger.Printf("modbus: received % x\n", aduResponse)
 	}
 	return
 }
