@@ -21,7 +21,7 @@ func ClientTestReadCoils(t *testing.T, client modbus.Client) {
 	AssertEquals(t, 3, len(results))
 }
 
-func ClientTestDiscreteInputs(t *testing.T, client modbus.Client) {
+func ClientTestReadDiscreteInputs(t *testing.T, client modbus.Client) {
 	// Read discrete inputs 197-218
 	address := uint16(0x00C4)
 	quantity := uint16(0x0016)
@@ -136,4 +136,18 @@ func ClientTestReadFIFOQueue(t *testing.T, client modbus.Client) {
 	} else {
 		AssertEquals(t, 0, len(results))
 	}
+}
+
+func ClientTestAll(t *testing.T, client modbus.Client) {
+	ClientTestReadCoils(t, client)
+	ClientTestReadDiscreteInputs(t, client)
+	ClientTestReadHoldingRegisters(t, client)
+	ClientTestReadInputRegisters(t, client)
+	ClientTestWriteSingleCoil(t, client)
+	ClientTestWriteSingleRegister(t, client)
+	ClientTestWriteMultipleCoils(t, client)
+	ClientTestWriteMultipleRegisters(t, client)
+	ClientTestMaskWriteRegisters(t, client)
+	ClientTestReadWriteMultipleRegisters(t, client)
+	ClientTestReadFIFOQueue(t, client)
 }

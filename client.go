@@ -368,7 +368,7 @@ func (mb *client) MaskWriteRegister(address, andMask, orMask uint16) (results []
 //  Write registers value : N* bytes
 // Response:
 //  Function code         : 1 byte (0x17)
-//  Byte count            : 2 bytes
+//  Byte count            : 1 byte
 //  Read registers value  : Nx2 bytes
 func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error) {
 	if readQuantity < 1 || readQuantity > 125 {

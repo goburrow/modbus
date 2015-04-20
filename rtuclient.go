@@ -168,7 +168,8 @@ func calculateResponseLength(adu []byte) int {
 			length++
 		}
 	case FuncCodeReadInputRegisters,
-		FuncCodeReadHoldingRegisters:
+		FuncCodeReadHoldingRegisters,
+		FuncCodeReadWriteMultipleRegisters:
 		count := int(binary.BigEndian.Uint16(adu[4:]))
 		length += 1 + count*2
 	case FuncCodeWriteSingleCoil,
@@ -176,9 +177,6 @@ func calculateResponseLength(adu []byte) int {
 		FuncCodeWriteSingleRegister,
 		FuncCodeWriteMultipleRegisters:
 		length += 4
-	case FuncCodeReadWriteMultipleRegisters:
-		count := int(binary.BigEndian.Uint16(adu[4:]))
-		length += 2 + count*2
 	case FuncCodeMaskWriteRegister:
 		length += 6
 	case FuncCodeReadFIFOQueue:

@@ -14,73 +14,19 @@ import (
 )
 
 const (
-	testTCPServer = "localhost:5020"
+	tcpDevice = "localhost:5020"
 )
 
-func TestTCPClientReadCoils(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestReadCoils(t, client)
-}
-
-func TestTCPClientReadDiscreteInputs(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	// Read discrete inputs 197-218
-	ClientTestDiscreteInputs(t, client)
-}
-
-func TestTCPClientReadHoldingRegisters(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestReadHoldingRegisters(t, client)
-}
-
-func TestTCPClientReadInputRegisters(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestReadInputRegisters(t, client)
-}
-
-func TestTCPClientWriteSingleCoil(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestWriteSingleCoil(t, client)
-}
-
-func TestTCPClientWriteSingleRegister(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestWriteSingleRegister(t, client)
-}
-
-func TestTCPClientWriteMultipleCoils(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestWriteMultipleCoils(t, client)
-}
-
-func TestTCPClientWriteMultipleRegisters(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestWriteMultipleRegisters(t, client)
-}
-
-func TestTCPClientMaskWriteRegisters(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestMaskWriteRegisters(t, client)
-}
-
-func TestTCPClientReadWriteMultipleRegisters(t *testing.T) {
-	client := modbus.TCPClient(testTCPServer)
-	ClientTestReadWriteMultipleRegisters(t, client)
-}
-
-func TestTCPClientReadFIFOQueue(t *testing.T) {
-	handler := modbus.NewTCPClientHandler(testTCPServer)
-	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
-
-	client := modbus.NewClient(handler)
-	ClientTestReadFIFOQueue(t, client)
+func TestTCPClient(t *testing.T) {
+	client := modbus.TCPClient(tcpDevice)
+	ClientTestAll(t, client)
 }
 
 func TestTCPClientAdvancedUsage(t *testing.T) {
-	handler := modbus.NewTCPClientHandler(testTCPServer)
+	handler := modbus.NewTCPClientHandler(tcpDevice)
 	handler.Timeout = 5 * time.Second
-	handler.SlaveId = 0x01
-	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
+	handler.SlaveId = 1
+	handler.Logger = log.New(os.Stdout, "tcp: ", log.LstdFlags)
 	handler.Connect()
 	defer handler.Close()
 

@@ -168,7 +168,7 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 		defer mb.Close()
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending %s\n", aduRequest)
+		mb.Logger.Printf("modbus: sending %q\n", aduRequest)
 	}
 	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
@@ -193,7 +193,7 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 	}
 	aduResponse = data[:length]
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received %s\n", aduResponse)
+		mb.Logger.Printf("modbus: received %q\n", aduResponse)
 	}
 	return
 }
