@@ -44,3 +44,26 @@ func TestRTUDecoding(t *testing.T) {
 		t.Fatalf("Data: expected %v, actual %v", expected, pdu.Data)
 	}
 }
+
+var responseLengthTests = []struct {
+	adu    []byte
+	length int
+}{
+	{[]byte{4, 1, 0, 0xA, 0, 0xD, 0xDD, 0x98}, 7},
+	{[]byte{4, 2, 0, 0xA, 0, 0xD, 0x99, 0x98}, 7},
+	{[]byte{1, 3, 0, 0, 0, 2, 0xC4, 0xB}, 9},
+	{[]byte{0x11, 5, 0, 0xAC, 0xFF, 0, 0x4E, 0x8B}, 8},
+	{[]byte{0x11, 6, 0, 1, 0, 3, 0x9A, 0x9B}, 8},
+	{[]byte{0x11, 0xF, 0, 0x13, 0, 0xA, 2, 0xCD, 1, 0xBF, 0xB}, 8},
+	{[]byte{0x11, 0x10, 0, 1, 0, 2, 4, 0, 0xA, 1, 2, 0xC6, 0xF0}, 8},
+}
+
+func TestCalculateResponseLength(t *testing.T) {
+	for _, input := range responseLengthTests {
+		output := calculateResponseLength(input.adu)
+		if output != input.length {
+			t.Errorf("Response length of %x: expected %v, actual: %v",
+				input.adu, input.length, output)
+		}
+	}
+}

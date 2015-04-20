@@ -5,9 +5,11 @@
 package modbus
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
+	"time"
 )
 
 const (
@@ -40,7 +42,7 @@ type rtuPackager struct {
 }
 
 // Encode encodes PDU in a RTU frame:
-//  Address         : 1 byte
+//  Slave Address   : 1 byte
 //  Function        : 1 byte
 //  Data            : 0 up to 252 bytes
 //  CRC             : 2 byte
@@ -120,9 +122,17 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
+	bytesToRead := calculateResponseLength(aduRequest)
+	time.Sleep(mb.calculateDelay(len(aduRequest) + bytesToRead))
+
 	var n int
 	var data [rtuMaxLength]byte
-	if n, err = io.ReadAtLeast(mb.port, data[:], rtuMinLength); err != nil {
+	if bytesToRead > rtuMinLength && bytesToRead <= rtuMaxLength {
+		n, err = io.ReadFull(mb.port, data[:bytesToRead])
+	} else {
+		n, err = io.ReadAtLeast(mb.port, data[:], rtuMinLength)
+	}
+	if err != nil {
 		return
 	}
 	aduResponse = data[:n]
@@ -130,4 +140,50 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		mb.Logger.Printf("modbus: received % x\n", aduResponse)
 	}
 	return
+}
+
+// calculateDelay roughly calculates time needed for the next frame.
+// See MODBUS over Serial Line - Specification and Implementation Guide (page 13).
+func (mb *rtuSerialTransporter) calculateDelay(chars int) time.Duration {
+	var characterDelay, frameDelay int // us
+
+	if mb.BaudRate <= 0 || mb.BaudRate > 19200 {
+		characterDelay = 750
+		frameDelay = 1750
+	} else {
+		characterDelay = 15000000 / mb.BaudRate
+		frameDelay = 35000000 / mb.BaudRate
+	}
+	return time.Duration(characterDelay*chars+frameDelay) * time.Microsecond
+}
+
+func calculateResponseLength(adu []byte) int {
+	length := rtuMinLength
+	switch adu[1] {
+	case FuncCodeReadDiscreteInputs,
+		FuncCodeReadCoils:
+		count := int(binary.BigEndian.Uint16(adu[4:]))
+		length += 1 + count/8
+		if count%8 != 0 {
+			length++
+		}
+	case FuncCodeReadInputRegisters,
+		FuncCodeReadHoldingRegisters:
+		count := int(binary.BigEndian.Uint16(adu[4:]))
+		length += 1 + count*2
+	case FuncCodeWriteSingleCoil,
+		FuncCodeWriteMultipleCoils,
+		FuncCodeWriteSingleRegister,
+		FuncCodeWriteMultipleRegisters:
+		length += 4
+	case FuncCodeReadWriteMultipleRegisters:
+		count := int(binary.BigEndian.Uint16(adu[4:]))
+		length += 2 + count*2
+	case FuncCodeMaskWriteRegister:
+		length += 6
+	case FuncCodeReadFIFOQueue:
+		// undetermined
+	default:
+	}
+	return length
 }
