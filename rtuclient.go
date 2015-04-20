@@ -114,7 +114,7 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		defer mb.Close()
 	}
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending %v\n", aduRequest)
+		mb.Logger.Printf("modbus: sending %#v\n", aduRequest)
 	}
 	var n int
 	if n, err = mb.write(aduRequest); err != nil {
@@ -126,7 +126,7 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 	}
 	aduResponse = data[:n]
 	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received %v\n", aduResponse)
+		mb.Logger.Printf("modbus: received %#v\n", aduResponse)
 	}
 	return
 }

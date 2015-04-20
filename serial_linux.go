@@ -118,7 +118,7 @@ func (mb *serialTransporter) read(b []byte) (n int, err error) {
 	fdSet(fd, &rfds)
 
 	timeout := syscall.NsecToTimeval(mb.Timeout.Nanoseconds())
-
+	time.Sleep(40 * time.Millisecond)
 	if _, err = syscall.Select(fd+1, &rfds, nil, nil, &timeout); err != nil {
 		return
 	}
