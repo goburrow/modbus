@@ -5,7 +5,6 @@
 package modbus
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -18,8 +17,8 @@ const (
 	tcpProtocolIdentifier uint16 = 0x0000
 
 	// Modbus Application Protocol
-	tcpHeaderLength = 7
-	tcpMaxLength    = 260
+	tcpHeaderSize = 7
+	tcpMaxLength  = 260
 	// Default TCP timeout is not set
 	tcpTimeoutMillis = 5000
 )
@@ -56,40 +55,25 @@ type tcpPackager struct {
 //  Protocol identifier: 2 bytes
 //  Length: 2 bytes
 //  Unit identifier: 1 byte
+//  Function code: 1 byte
+//  Data: n bytes
 func (mb *tcpPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
-	var buf bytes.Buffer
+	adu = make([]byte, tcpHeaderSize+1+len(pdu.Data))
 
 	// Transaction identifier
 	mb.transactionId++
-	if err = binary.Write(&buf, binary.BigEndian, mb.transactionId); err != nil {
-		return
-	}
+	binary.BigEndian.PutUint16(adu, mb.transactionId)
 	// Protocol identifier
-	if err = binary.Write(&buf, binary.BigEndian, tcpProtocolIdentifier); err != nil {
-		return
-	}
+	binary.BigEndian.PutUint16(adu[2:], tcpProtocolIdentifier)
 	// Length = sizeof(SlaveId) + sizeof(FunctionCode) + Data
 	length := uint16(1 + 1 + len(pdu.Data))
-	if err = binary.Write(&buf, binary.BigEndian, length); err != nil {
-		return
-	}
+	binary.BigEndian.PutUint16(adu[4:], length)
 	// Unit identifier
-	if err = binary.Write(&buf, binary.BigEndian, mb.SlaveId); err != nil {
-		return
-	}
+	adu[6] = mb.SlaveId
+
 	// PDU
-	var n int
-	if err = buf.WriteByte(pdu.FunctionCode); err != nil {
-		return
-	}
-	if n, err = buf.Write(pdu.Data); err != nil {
-		return
-	}
-	if n != len(pdu.Data) {
-		err = fmt.Errorf("modbus: encoded pdu size '%v' does not match expected '%v'", len(pdu.Data), n)
-		return
-	}
-	adu = buf.Bytes()
+	adu[tcpHeaderSize] = pdu.FunctionCode
+	copy(adu[tcpHeaderSize+1:], pdu.Data)
 	return
 }
 
@@ -125,15 +109,15 @@ func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 func (mb *tcpPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	// Read length value in the header
 	length := binary.BigEndian.Uint16(adu[4:])
-	pduLength := len(adu) - tcpHeaderLength
+	pduLength := len(adu) - tcpHeaderSize
 	if pduLength <= 0 || pduLength != int(length-1) {
 		err = fmt.Errorf("modbus: length in response '%v' does not match pdu data length '%v'", length-1, pduLength)
 		return
 	}
 	pdu = &ProtocolDataUnit{}
 	// The first byte after header is function code
-	pdu.FunctionCode = adu[tcpHeaderLength]
-	pdu.Data = adu[tcpHeaderLength+1:]
+	pdu.FunctionCode = adu[tcpHeaderSize]
+	pdu.Data = adu[tcpHeaderSize+1:]
 	return
 }
 
@@ -171,7 +155,7 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		return
 	}
 	// Read header first
-	if _, err = io.ReadFull(mb.conn, data[:tcpHeaderLength]); err != nil {
+	if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err != nil {
 		return
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
@@ -181,14 +165,14 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		err = fmt.Errorf("modbus: length in response header '%v' must not be zero", length)
 		return
 	}
-	if length > (tcpMaxLength - (tcpHeaderLength - 1)) {
+	if length > (tcpMaxLength - (tcpHeaderSize - 1)) {
 		mb.flush(data[:])
-		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderLength+1)
+		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderSize+1)
 		return
 	}
 	// Skip unit id
-	length += tcpHeaderLength - 1
-	if _, err = io.ReadFull(mb.conn, data[tcpHeaderLength:length]); err != nil {
+	length += tcpHeaderSize - 1
+	if _, err = io.ReadFull(mb.conn, data[tcpHeaderSize:length]); err != nil {
 		return
 	}
 	aduResponse = data[:length]
