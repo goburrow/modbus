@@ -45,3 +45,32 @@ func TestTCPDecoding(t *testing.T) {
 		t.Fatalf("Data: expected %v, actual %v", expected, adu)
 	}
 }
+
+func BenchmarkTCPEncoder(b *testing.B) {
+	encoder := tcpPackager{
+		SlaveId: 10,
+	}
+	pdu := ProtocolDataUnit{
+		FunctionCode: 1,
+		Data:         []byte{2, 3, 4, 5, 6, 7, 8, 9},
+	}
+	for i := 0; i < b.N; i++ {
+		_, err := encoder.Encode(&pdu)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkTCPDecoder(b *testing.B) {
+	decoder := tcpPackager{
+		SlaveId: 10,
+	}
+	adu := []byte{0, 1, 0, 0, 0, 6, 17, 3, 0, 120, 0, 3}
+	for i := 0; i < b.N; i++ {
+		_, err := decoder.Decode(adu)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
