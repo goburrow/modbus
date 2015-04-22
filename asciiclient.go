@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	asciiStart     = ":"
-	asciiEnd       = "\r\n"
-	asciiMinLength = 3
-	asciiMaxLength = 513
+	asciiStart   = ":"
+	asciiEnd     = "\r\n"
+	asciiMinSize = 3
+	asciiMaxSize = 513
 
 	hexTable = "0123456789ABCDEF"
 )
@@ -81,7 +81,7 @@ func (mb *asciiPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 func (mb *asciiPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
 	length := len(aduResponse)
 	// Minimum size (including address, function and LRC)
-	if length < asciiMinLength+6 {
+	if length < asciiMinSize+6 {
 		err = fmt.Errorf("modbus: response length '%v' does not meet minimum '%v'", length, 9)
 		return
 	}
@@ -174,18 +174,18 @@ func (mb *asciiSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 		return
 	}
 	var n int
-	var data [asciiMaxLength]byte
+	var data [asciiMaxSize]byte
 	length := 0
 	for {
 		if n, err = mb.port.Read(data[length:]); err != nil {
 			return
 		}
 		length += n
-		if length >= asciiMaxLength || n == 0 {
+		if length >= asciiMaxSize || n == 0 {
 			break
 		}
 		// Expect end of frame in the data received
-		if length > asciiMinLength {
+		if length > asciiMinSize {
 			if string(data[length-len(asciiEnd):length]) == asciiEnd {
 				break
 			}

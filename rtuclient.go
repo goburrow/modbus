@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	rtuMinLength = 4
-	rtuMaxLength = 256
+	rtuMinSize = 4
+	rtuMaxSize = 256
 )
 
 // RTUClientHandler implements Packager and Transporter interface.
@@ -48,8 +48,8 @@ type rtuPackager struct {
 //  CRC             : 2 byte
 func (mb *rtuPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	length := len(pdu.Data) + 4
-	if length > rtuMaxLength {
-		err = fmt.Errorf("modbus: length of data '%v' must not be bigger than '%v'", length, rtuMaxLength)
+	if length > rtuMaxSize {
+		err = fmt.Errorf("modbus: length of data '%v' must not be bigger than '%v'", length, rtuMaxSize)
 		return
 	}
 	adu = make([]byte, length)
@@ -72,8 +72,8 @@ func (mb *rtuPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 func (mb *rtuPackager) Verify(aduRequest []byte, aduResponse []byte) (err error) {
 	length := len(aduResponse)
 	// Minimum size (including address, function and CRC)
-	if length < rtuMinLength {
-		err = fmt.Errorf("modbus: response length '%v' does not meet minimum '%v'", length, rtuMinLength)
+	if length < rtuMinSize {
+		err = fmt.Errorf("modbus: response length '%v' does not meet minimum '%v'", length, rtuMinSize)
 		return
 	}
 	// Slave address must match
@@ -126,11 +126,11 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 	time.Sleep(mb.calculateDelay(len(aduRequest) + bytesToRead))
 
 	var n int
-	var data [rtuMaxLength]byte
-	if bytesToRead > rtuMinLength && bytesToRead <= rtuMaxLength {
+	var data [rtuMaxSize]byte
+	if bytesToRead > rtuMinSize && bytesToRead <= rtuMaxSize {
 		n, err = io.ReadFull(mb.port, data[:bytesToRead])
 	} else {
-		n, err = io.ReadAtLeast(mb.port, data[:], rtuMinLength)
+		n, err = io.ReadAtLeast(mb.port, data[:], rtuMinSize)
 	}
 	if err != nil {
 		return
@@ -158,7 +158,7 @@ func (mb *rtuSerialTransporter) calculateDelay(chars int) time.Duration {
 }
 
 func calculateResponseLength(adu []byte) int {
-	length := rtuMinLength
+	length := rtuMinSize
 	switch adu[1] {
 	case FuncCodeReadDiscreteInputs,
 		FuncCodeReadCoils:
