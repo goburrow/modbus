@@ -32,7 +32,7 @@ func (mb *serialPort) Connect() (err error) {
 	} else {
 		err = mb.port.Open(&mb.Config)
 	}
-	if err != nil {
+	if err == nil {
 		mb.isConnected = true
 	}
 	return
@@ -43,5 +43,6 @@ func (mb *serialPort) Close() (err error) {
 		return
 	}
 	err = mb.port.Close()
+	mb.isConnected = false
 	return
 }
