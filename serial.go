@@ -43,5 +43,6 @@ func (mb *serialPort) Close() (err error) {
 		return
 	}
 	err = mb.port.Close()
+	mb.isConnected = false
 	return
 }
