@@ -111,13 +111,9 @@ type rtuSerialTransporter struct {
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
 	if !mb.isConnected {
-		err = mb.Connect()
-
-		if mb.isConnected == false {
+		if err = mb.Connect(); err != nil {
 			return
 		}
-
-		err = nil
 		defer mb.Close()
 	}
 	if mb.Logger != nil {
