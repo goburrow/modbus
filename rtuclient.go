@@ -122,16 +122,39 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
+	function := aduRequest[1]
+	functionFail := aduRequest[1] & 0x80
 	bytesToRead := calculateResponseLength(aduRequest)
 	time.Sleep(mb.calculateDelay(len(aduRequest) + bytesToRead))
 
 	var n int
+	var n1 int
 	var data [rtuMaxSize]byte
-	if bytesToRead > rtuMinSize && bytesToRead <= rtuMaxSize {
-		n, err = io.ReadFull(mb.port, data[:bytesToRead])
-	} else {
-		n, err = io.ReadAtLeast(mb.port, data[:], rtuMinSize)
+	//We first read the minimum length and then read either the full package
+	//or the error package, depending on the error status (byte 2 of the response)
+	n, err = io.ReadAtLeast(mb.port, data[:], rtuMinSize)
+	if err != nil {
+		return
 	}
+	//if the function is correct
+	if data[1] == function {
+		//we read the rest of the bytes
+		if n < bytesToRead {
+			if bytesToRead > rtuMinSize && bytesToRead <= rtuMaxSize {
+				if bytesToRead > n {
+					n1, err = io.ReadFull(mb.port, data[n:bytesToRead])
+					n += n1
+				}
+			}
+		}
+	} else if data[1] == functionFail {
+		//for error we need to read 5 bytes
+		if n < bytesToRead {
+			n1, err = io.ReadFull(mb.port, data[n:5])
+		}
+		n += n1
+	}
+
 	if err != nil {
 		return
 	}
