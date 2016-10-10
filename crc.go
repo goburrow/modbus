@@ -60,9 +60,9 @@ func (crc *crc) pushBytes(bs []byte) *crc {
 	var idx, b byte
 
 	for _, b = range bs {
-		idx = crc.high ^ b
-		crc.high = crc.low ^ crcHighBytes[idx]
-		crc.low = crcLowBytes[idx]
+		idx = crc.low ^ b
+		crc.low = crc.high ^ crcHighBytes[idx]
+		crc.high = crcLowBytes[idx]
 	}
 	return crc
 }
