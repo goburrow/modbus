@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"time"
 )
 
@@ -27,6 +26,8 @@ type RTUClientHandler struct {
 func NewRTUClientHandler(address string) *RTUClientHandler {
 	handler := &RTUClientHandler{}
 	handler.Address = address
+	handler.Timeout = serialTimeout
+	handler.IdleTimeout = serialIdleTimeout
 	return handler
 }
 
@@ -102,23 +103,22 @@ func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	return
 }
 
-// asciiSerialTransporter implements Transporter interface.
+// rtuSerialTransporter implements Transporter interface.
 type rtuSerialTransporter struct {
 	serialPort
-
-	Logger *log.Logger
 }
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	if !mb.isConnected {
-		if err = mb.Connect(); err != nil {
-			return
-		}
-		defer mb.Close()
+	// Make sure port is connected
+	if err = mb.serialPort.connect(); err != nil {
+		return
 	}
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending % x\n", aduRequest)
-	}
+	// Start the timer to close when idle
+	mb.serialPort.lastActivity = time.Now()
+	mb.serialPort.startCloseTimer()
+
+	// Send the request
+	mb.serialPort.logf("modbus: sending %q\n", aduRequest)
 	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
@@ -159,9 +159,7 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		return
 	}
 	aduResponse = data[:n]
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received % x\n", aduResponse)
-	}
+	mb.serialPort.logf("modbus: received % x\n", aduResponse)
 	return
 }
 

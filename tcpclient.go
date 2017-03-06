@@ -10,6 +10,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,7 +22,8 @@ const (
 	tcpHeaderSize = 7
 	tcpMaxLength  = 260
 	// Default TCP timeout is not set
-	tcpTimeoutMillis = 5000
+	tcpTimeout     = 10 * time.Second
+	tcpIdleTimeout = 60 * time.Second
 )
 
 // TCPClientHandler implements Packager and Transporter interface.
@@ -31,9 +34,11 @@ type TCPClientHandler struct {
 
 // NewTCPClientHandler allocates a new TCPClientHandler.
 func NewTCPClientHandler(address string) *TCPClientHandler {
-	handler := &TCPClientHandler{}
-	handler.Address = address
-	return handler
+	h := &TCPClientHandler{}
+	h.Address = address
+	h.Timeout = tcpTimeout
+	h.IdleTimeout = tcpIdleTimeout
+	return h
 }
 
 // TCPClient creates TCP client with default handler and given connect string.
@@ -45,7 +50,7 @@ func TCPClient(address string) Client {
 // tcpPackager implements Packager interface.
 type tcpPackager struct {
 	// For synchronization between messages of server & client
-	transactionId uint16
+	transactionId uint32
 	// Broadcast address is 0
 	SlaveId byte
 }
@@ -61,8 +66,8 @@ func (mb *tcpPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 	adu = make([]byte, tcpHeaderSize+1+len(pdu.Data))
 
 	// Transaction identifier
-	mb.transactionId++
-	binary.BigEndian.PutUint16(adu, mb.transactionId)
+	transactionId := atomic.AddUint32(&mb.transactionId, 1)
+	binary.BigEndian.PutUint16(adu, uint16(transactionId))
 	// Protocol identifier
 	binary.BigEndian.PutUint16(adu[2:], tcpProtocolIdentifier)
 	// Length = sizeof(SlaveId) + sizeof(FunctionCode) + Data
@@ -127,34 +132,45 @@ type tcpTransporter struct {
 	Address string
 	// Connect & Read timeout
 	Timeout time.Duration
+	// Idle timeout to close the connection
+	IdleTimeout time.Duration
 	// Transmission logger
 	Logger *log.Logger
 
 	// TCP connection
-	conn net.Conn
+	mu           sync.Mutex
+	conn         net.Conn
+	closeTimer   *time.Timer
+	lastActivity time.Time
 }
 
 // Send sends data to server and ensures response length is greater than header length.
 func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
-	var data [tcpMaxLength]byte
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
 
-	if mb.conn == nil {
-		// Establish a new connection and close it when complete
-		if err = mb.Connect(); err != nil {
-			return
-		}
-		defer mb.Close()
-	}
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: sending % x\n", aduRequest)
-	}
-	if err = mb.conn.SetDeadline(time.Now().Add(mb.Timeout)); err != nil {
+	// Establish a new connection if not connected
+	if err = mb.connect(); err != nil {
 		return
 	}
+	// Set timer to close when idle
+	mb.lastActivity = time.Now()
+	mb.startCloseTimer()
+	// Set write and read timeout
+	var timeout time.Time
+	if mb.Timeout > 0 {
+		timeout = mb.lastActivity.Add(mb.Timeout)
+	}
+	if err = mb.conn.SetDeadline(timeout); err != nil {
+		return
+	}
+	// Send data
+	mb.logf("modbus: sending % x", aduRequest)
 	if _, err = mb.conn.Write(aduRequest); err != nil {
 		return
 	}
 	// Read header first
+	var data [tcpMaxLength]byte
 	if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err != nil {
 		return
 	}
@@ -176,31 +192,48 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		return
 	}
 	aduResponse = data[:length]
-	if mb.Logger != nil {
-		mb.Logger.Printf("modbus: received % x\n", aduResponse)
-	}
+	mb.logf("modbus: received % x\n", aduResponse)
 	return
 }
 
 // Connect establishes a new connection to the address in Address.
 // Connect and Close are exported so that multiple requests can be done with one session
-func (mb *tcpTransporter) Connect() (err error) {
-	// Timeout must be specified
-	if mb.Timeout <= 0 {
-		mb.Timeout = tcpTimeoutMillis * time.Millisecond
+func (mb *tcpTransporter) Connect() error {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+
+	return mb.connect()
+}
+
+func (mb *tcpTransporter) connect() error {
+	if mb.conn == nil {
+		dialer := net.Dialer{Timeout: mb.Timeout}
+		conn, err := dialer.Dial("tcp", mb.Address)
+		if err != nil {
+			return err
+		}
+		mb.conn = conn
 	}
-	dialer := net.Dialer{Timeout: mb.Timeout}
-	mb.conn, err = dialer.Dial("tcp", mb.Address)
-	return
+	return nil
+}
+
+func (mb *tcpTransporter) startCloseTimer() {
+	if mb.IdleTimeout <= 0 {
+		return
+	}
+	if mb.closeTimer == nil {
+		mb.closeTimer = time.AfterFunc(mb.IdleTimeout, mb.closeIdle)
+	} else {
+		mb.closeTimer.Reset(mb.IdleTimeout)
+	}
 }
 
 // Close closes current connection.
-func (mb *tcpTransporter) Close() (err error) {
-	if mb.conn != nil {
-		err = mb.conn.Close()
-		mb.conn = nil
-	}
-	return
+func (mb *tcpTransporter) Close() error {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+
+	return mb.close()
 }
 
 // flush flushes pending data in the connection,
@@ -217,4 +250,34 @@ func (mb *tcpTransporter) flush(b []byte) (err error) {
 		}
 	}
 	return
+}
+
+func (mb *tcpTransporter) logf(format string, v ...interface{}) {
+	if mb.Logger != nil {
+		mb.Logger.Printf(format, v...)
+	}
+}
+
+// closeLocked closes current connection. Caller must hold the mutex before calling this method.
+func (mb *tcpTransporter) close() (err error) {
+	if mb.conn != nil {
+		err = mb.conn.Close()
+		mb.conn = nil
+	}
+	return
+}
+
+// closeIdle closes the connection if last activity is passed behind IdleTimeout.
+func (mb *tcpTransporter) closeIdle() {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+
+	if mb.IdleTimeout <= 0 {
+		return
+	}
+	idle := time.Now().Sub(mb.lastActivity)
+	if idle >= mb.IdleTimeout {
+		mb.logf("modbus: closing connection due to idle timeout: %v", idle)
+		mb.close()
+	}
 }
