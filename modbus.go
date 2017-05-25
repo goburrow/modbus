@@ -26,6 +26,12 @@ const (
 	FuncCodeReadWriteMultipleRegisters = 23
 	FuncCodeMaskWriteRegister          = 22
 	FuncCodeReadFIFOQueue              = 24
+	FuncCodeReadDeviceId               = 43
+)
+
+const (
+	MEITypeCANopen  = 13
+	MEITypeDeviceId = 14
 )
 
 const (
