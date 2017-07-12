@@ -20,6 +20,11 @@ type client struct {
 	transporter Transporter
 }
 
+//add 2017-7-11
+func (mb *client) ChangeSlaveId(newSlaveId byte) {
+	mb.packager.ChangeSlaveId(newSlaveId)
+}
+
 // NewClient creates a new modbus client with given backend handler.
 func NewClient(handler ClientHandler) Client {
 	return &client{packager: handler, transporter: handler}
