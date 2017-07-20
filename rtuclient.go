@@ -14,6 +14,8 @@ import (
 const (
 	rtuMinSize = 4
 	rtuMaxSize = 256
+
+	rtuExceptionSize = 5
 )
 
 // RTUClientHandler implements Packager and Transporter interface.
@@ -149,8 +151,8 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 		}
 	} else if data[1] == functionFail {
 		//for error we need to read 5 bytes
-		if n < bytesToRead {
-			n1, err = io.ReadFull(mb.port, data[n:5])
+		if n < rtuExceptionSize {
+			n1, err = io.ReadFull(mb.port, data[n:rtuExceptionSize])
 		}
 		n += n1
 	}
