@@ -134,6 +134,8 @@ type tcpTransporter struct {
 	Timeout time.Duration
 	// Idle timeout to close the connection
 	IdleTimeout time.Duration
+	// Recovery timeout if tcp communication misbehaves
+	LinkRecoveryTimeout time.Duration
 	// Transmission logger
 	Logger *log.Logger
 
@@ -149,30 +151,39 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	mb.mu.Lock()
 	defer mb.mu.Unlock()
 
-	// Establish a new connection if not connected
-	if err = mb.connect(); err != nil {
-		return
-	}
-	// Set timer to close when idle
-	mb.lastActivity = time.Now()
-	mb.startCloseTimer()
-	// Set write and read timeout
-	var timeout time.Time
-	if mb.Timeout > 0 {
-		timeout = mb.lastActivity.Add(mb.Timeout)
-	}
-	if err = mb.conn.SetDeadline(timeout); err != nil {
-		return
-	}
-	// Send data
-	mb.logf("modbus: sending % x", aduRequest)
-	if _, err = mb.conn.Write(aduRequest); err != nil {
-		return
-	}
-	// Read header first
 	var data [tcpMaxLength]byte
-	if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err != nil {
-		return
+	recoveryStart := time.Now()
+	for {
+		// Establish a new connection if not connected
+		if err = mb.connect(); err != nil {
+			return
+		}
+		// Set timer to close when idle
+		mb.lastActivity = time.Now()
+		mb.startCloseTimer()
+		// Set write and read timeout
+		var timeout time.Time
+		if mb.Timeout > 0 {
+			timeout = mb.lastActivity.Add(mb.Timeout)
+		}
+		if err = mb.conn.SetDeadline(timeout); err != nil {
+			return
+		}
+		// Send data
+		mb.logf("modbus: sending % x", aduRequest)
+		if _, err = mb.conn.Write(aduRequest); err != nil {
+			return
+		}
+		// Read header first
+		if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err == nil {
+			break
+			// Read attempt failed
+		} else if err != io.EOF || mb.LinkRecoveryTimeout == 0 || time.Now().Sub(recoveryStart) > mb.IdleTimeout {
+			return
+		}
+
+		mb.close()
+		time.Sleep(mb.LinkRecoveryTimeout)
 	}
 	// Read length, ignore transaction & protocol id (4 bytes)
 	length := int(binary.BigEndian.Uint16(data[4:]))
