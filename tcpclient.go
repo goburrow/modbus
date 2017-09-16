@@ -178,9 +178,11 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err == nil {
 			break
 			// Read attempt failed
-		} else if err != io.EOF || mb.LinkRecoveryTimeout == 0 || time.Now().Sub(recoveryStart) > mb.IdleTimeout {
+		} else if (err != io.EOF && err != io.ErrUnexpectedEOF) ||
+			mb.LinkRecoveryTimeout == 0 || time.Now().Sub(recoveryStart) > mb.IdleTimeout {
 			return
 		}
+		mb.logf("modbus: close connection and retry, because of %v", err)
 
 		mb.close()
 		time.Sleep(mb.LinkRecoveryTimeout)
