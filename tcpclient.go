@@ -161,7 +161,7 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 		// Read header first
 		if _, err = io.ReadFull(mb.conn, data[:tcpHeaderSize]); err == nil {
 			aduResponse, err = mb.processResponse(data[:])
-			if err == nil && mb.ProtocolRecoveryTimeout > 0 && time.Until(recoveryDeadline) > 0 &&
+			if err == nil && mb.ProtocolRecoveryTimeout > 0 && recoveryDeadline.Sub(time.Now()) > 0 &&
 				verify(aduRequest, aduResponse) != nil {
 				continue
 			}
@@ -169,7 +169,7 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 			return
 			// Read attempt failed
 		} else if (err != io.EOF && err != io.ErrUnexpectedEOF) ||
-			mb.LinkRecoveryTimeout == 0 || time.Until(recoveryDeadline) < 0 {
+			mb.LinkRecoveryTimeout == 0 || recoveryDeadline.Sub(time.Now()) < 0 {
 			return
 		}
 		mb.logf("modbus: close connection and retry, because of %v", err)
@@ -184,25 +184,25 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	}
 }
 
-func (mb *tcpTransporter) processResponse(aduRequest []byte) (aduResponse []byte, err error) {
+func (mb *tcpTransporter) processResponse(data []byte) (aduResponse []byte, err error) {
 	// Read length, ignore transaction & protocol id (4 bytes)
-	length := int(binary.BigEndian.Uint16(aduRequest[4:]))
+	length := int(binary.BigEndian.Uint16(data[4:]))
 	if length <= 0 {
-		mb.flush(aduRequest[:])
+		mb.flush(data[:])
 		err = fmt.Errorf("modbus: length in response header '%v' must not be zero", length)
 		return
 	}
 	if length > (tcpMaxLength - (tcpHeaderSize - 1)) {
-		mb.flush(aduRequest[:])
+		mb.flush(data[:])
 		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderSize+1)
 		return
 	}
 	// Skip unit id
 	length += tcpHeaderSize - 1
-	if _, err = io.ReadFull(mb.conn, aduRequest[tcpHeaderSize:length]); err != nil {
+	if _, err = io.ReadFull(mb.conn, data[tcpHeaderSize:length]); err != nil {
 		return
 	}
-	aduResponse = aduRequest[:length]
+	aduResponse = data[:length]
 	return
 }
 
