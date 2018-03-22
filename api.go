@@ -46,6 +46,9 @@ type Client interface {
 	//ReadFIFOQueue reads the contents of a First-In-First-Out (FIFO) queue
 	// of register in a remote device and returns FIFO value register.
 	ReadFIFOQueue(address uint16) (results []byte, err error)
-  
+
+	// ReadDeviceId reads the device id contents of the remote device.
 	ReadDeviceId(deviceid byte, objectid byte) (results []byte, err error)
+	// UserFunction makes a user defined request of the remote device.
+	UserFunction(usersubfunc byte, data []byte) (results []byte, err error)
 }
