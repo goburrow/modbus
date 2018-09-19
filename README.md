@@ -70,9 +70,14 @@ err := handler.Connect()
 defer handler.Close()
 
 client := modbus.NewClient(handler)
+client.ChangeSlaveId(0x02) //you  can change slaveId before use
 results, err := client.ReadDiscreteInputs(15, 2)
 ```
 
 References
 ----------
 -   [Modbus Specifications and Implementation Guides](http://www.modbus.org/specs.php)
+
+
+Update log：
+2017-07-12：add ChangeSlaveId api

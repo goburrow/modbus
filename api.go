@@ -5,6 +5,7 @@
 package modbus
 
 type Client interface {
+	ChangeSlaveId(newSlaveId byte)	//add 2017-7-11
 	// Bit access
 
 	// ReadCoils reads from 1 to 2000 contiguous status of coils in a
