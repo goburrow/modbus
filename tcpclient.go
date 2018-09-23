@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -135,7 +134,7 @@ type tcpTransporter struct {
 	// Idle timeout to close the connection
 	IdleTimeout time.Duration
 	// Transmission logger
-	Logger *log.Logger
+	Logger logger
 
 	// TCP connection
 	mu           sync.Mutex

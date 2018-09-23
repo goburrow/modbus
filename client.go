@@ -9,6 +9,11 @@ import (
 	"fmt"
 )
 
+// logger is the interface to the required logging functions
+type logger interface {
+	Printf(format string, v ...interface{})
+}
+
 // ClientHandler is the interface that groups the Packager and Transporter methods.
 type ClientHandler interface {
 	Packager
