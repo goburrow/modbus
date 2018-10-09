@@ -92,3 +92,8 @@ type Packager interface {
 type Transporter interface {
 	Send(aduRequest []byte) (aduResponse []byte, err error)
 }
+
+type Connector interface {
+	Connect() error
+	Close() error
+}
