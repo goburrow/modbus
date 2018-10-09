@@ -44,6 +44,11 @@ type rtuPackager struct {
 	SlaveId byte
 }
 
+// SetSlave sets modbus slave id for the next client operations
+func (mb *rtuPackager) SetSlave(slaveId byte) {
+	mb.SlaveId = slaveId
+}
+
 // Encode encodes PDU in a RTU frame:
 //  Slave Address   : 1 byte
 //  Function        : 1 byte
