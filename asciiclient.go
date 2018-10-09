@@ -46,6 +46,11 @@ type asciiPackager struct {
 	SlaveId byte
 }
 
+// SetSlave sets modbus slave id for the next client operations
+func (mb *asciiPackager) SetSlave(slaveId byte) {
+	mb.SlaveId = slaveId
+}
+
 // Encode encodes PDU in a ASCII frame:
 //  Start           : 1 char
 //  Address         : 2 chars
