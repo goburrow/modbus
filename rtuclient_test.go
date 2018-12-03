@@ -29,17 +29,17 @@ func TestRTUEncoding(t *testing.T) {
 
 func TestRTUDecoding(t *testing.T) {
 	decoder := rtuPackager{}
-	adu := []byte{0x01, 0x10, 0x8A, 0x00, 0x00, 0x03, 0xAA, 0x10}
+	adu := []byte{0x05, 0x03, 0x02, 0x00, 0xAA, 0xC9, 0xFB, 0xFF, 0xFF, 0xFF, 0xFF}
 
 	pdu, err := decoder.Decode(adu)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if 16 != pdu.FunctionCode {
-		t.Fatalf("Function code: expected %v, actual %v", 16, pdu.FunctionCode)
+	if 3 != pdu.FunctionCode {
+		t.Fatalf("Function code: expected %v, actual %v", 3, pdu.FunctionCode)
 	}
-	expected := []byte{0x8A, 0x00, 0x00, 0x03}
+	expected := []byte{0x02, 0x00, 0xAA}
 	if !bytes.Equal(expected, pdu.Data) {
 		t.Fatalf("Data: expected %v, actual %v", expected, pdu.Data)
 	}
@@ -88,7 +88,8 @@ func BenchmarkRTUDecoder(b *testing.B) {
 	decoder := rtuPackager{
 		SlaveId: 10,
 	}
-	adu := []byte{0x01, 0x10, 0x8A, 0x00, 0x00, 0x03, 0xAA, 0x10}
+	//	adu := []byte{0x01, 0x10, 0x8A, 0x00, 0x00, 0x03, 0xAA, 0x10}
+	adu := []byte{0x05, 0x03, 0x02, 0x00, 0xAA, 0xC9, 0xFB, 0xFF, 0xFF, 0xFF}
 	for i := 0; i < b.N; i++ {
 		_, err := decoder.Decode(adu)
 		if err != nil {
