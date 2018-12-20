@@ -432,6 +432,132 @@ func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
 	return
 }
 
+// Request:
+//  Function code         : 1 byte (0x2B)
+//  MEI type  			  : 1 byte (0x0E)
+//  Read Device ID Code	  : 1 byte
+//  Object ID			  : 1 byte
+// Response:
+//  Function code         : 1 byte (0x2B)
+//  MEI type  			  : 1 byte (0x0E)
+//  Read Device ID Code	  : 1 byte
+//  Conformity level	  : 1 byte
+//  More follows		  : 1 byte
+//  Next object ID		  : 1 byte
+//  Number of objects	  : 1 byte
+//  List of objects		  : <Number of objects>
+//   Object ID			  : 1
+//   Object length		  : 1
+//	 Object value		  : <Object length> bytes
+func (mb *client) ReadDeviceIdentification(firstExtendedID byte) (results map[byte]string, err error) {
+	readDevIDCode := byte(0x01)
+	objectID := byte(0x00)
+	conformityLevel := byte(0x00)
+
+	objects := make(map[byte]string)
+	results = make(map[byte]string)
+
+	// Getting basic objects (mandatory)
+	for {
+		conformityLevel, objectID, objects, err =
+			mb.sendReadDeviceIdentification(readDevIDCode, objectID)
+		if err != nil {
+			return results, err
+		}
+
+		for k, v := range objects {
+			results[k] = v
+		}
+
+		if len(results) >= 3 {
+			break
+		} else {
+			if objectID == 0x00 {
+				err := fmt.Errorf("modbus: mandatory device identification objects are not available")
+				return results, err
+			}
+		}
+	}
+
+	// Getting regular and extended objects, if supported and requested by the user
+	for {
+		if (readDevIDCode == 0x01) && (conformityLevel&0x02) >= 0x02 {
+			readDevIDCode = 0x02
+			objectID = 0x00
+		} else if (readDevIDCode == 0x02) && (conformityLevel&0x03) == 0x03 && firstExtendedID >= 0x80 {
+			readDevIDCode = 0x03
+			objectID = firstExtendedID
+		} else {
+			break
+		}
+
+		for {
+			_, objectID, objects, err =
+				mb.sendReadDeviceIdentification(readDevIDCode, objectID)
+			if err != nil {
+				return results, err
+			}
+
+			for k, v := range objects {
+				results[k] = v
+			}
+
+			if objectID == 0x00 {
+				break
+			}
+		}
+	}
+
+	return
+}
+
+// sendReadDeviceIdentification sends a FC43/14 request and returns the reponse after some basic checks
+func (mb *client) sendReadDeviceIdentification(readDeviceIDCode byte, objectID byte) (
+	conformityLevel byte, nextObjID byte, objects map[byte]string, err error) {
+
+	objects = make(map[byte]string)
+
+	reqData := make([]byte, 3)
+	reqData[0] = MEITypeReadDeviceIdentification
+	reqData[1] = readDeviceIDCode
+	reqData[2] = objectID
+
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeMEI,
+		Data:         reqData,
+	}
+
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+
+	conformityLevel = response.Data[2]
+	if !((conformityLevel >= 0x01 && conformityLevel <= 0x03) ||
+		(conformityLevel >= 0x81 && conformityLevel <= 0x83)) {
+		err = fmt.Errorf("modbus: response conformitiy level '%v' is not valid", conformityLevel)
+		return
+	}
+
+	moreFollows := response.Data[3]
+	if moreFollows == 0xFF {
+		nextObjID = response.Data[4]
+	}
+
+	count := response.Data[5]
+	index := 6
+	for i := byte(0); i < count; i++ {
+		id := response.Data[index]
+		length := int(response.Data[index+1])
+		value := response.Data[index+2 : index+2+length]
+
+		objects[id] = string(value)
+		index += 2 + length
+	}
+
+	return
+}
+
 // Helpers
 
 // send sends request and checks possible exception in the response.
