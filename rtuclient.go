@@ -108,6 +108,13 @@ func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 // rtuSerialTransporter implements Transporter interface.
 type rtuSerialTransporter struct {
 	serialPort
+	// CalculateResponseLength calculates the expected response
+	// length according to an adu.
+	// If CalculateResponseLength is nil, the transporter uses its
+	// default calculator.
+	// Clients can provide their own response length calculator
+	// when a custom protocol is used with custom function codes.
+	CalculateResponseLength func(adu []byte) int
 }
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
@@ -126,7 +133,7 @@ func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err
 	}
 	function := aduRequest[1]
 	functionFail := aduRequest[1] & 0x80
-	bytesToRead := calculateResponseLength(aduRequest)
+	bytesToRead := mb.calculateResponseLength(aduRequest)
 	time.Sleep(mb.calculateDelay(len(aduRequest) + bytesToRead))
 
 	var n int
@@ -178,6 +185,16 @@ func (mb *rtuSerialTransporter) calculateDelay(chars int) time.Duration {
 		frameDelay = 35000000 / mb.BaudRate
 	}
 	return time.Duration(characterDelay*chars+frameDelay) * time.Microsecond
+}
+
+// calculateResponseLength uses a user-supplied calculator if provided or
+// uses an internal one to calculate the response length.
+func (mb *rtuSerialTransporter) calculateResponseLength(adu []byte) int {
+	fn := mb.CalculateResponseLength
+	if fn == nil {
+		fn = calculateResponseLength
+	}
+	return fn(adu)
 }
 
 func calculateResponseLength(adu []byte) int {
