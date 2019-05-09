@@ -90,6 +90,22 @@ func (mb *rtuPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 // Decode extracts PDU from RTU frame and verify CRC.
 func (mb *rtuPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	length := len(adu)
+
+	if length > 1 && adu[1] < 5 {
+		// adjust real length
+		if length < 3 {
+			err = fmt.Errorf("modbus: response length less than min '%v'", length)
+			return
+		} else {
+			real_len := int(adu[2]) + 5
+			if real_len > length {
+				err = fmt.Errorf("modbus: response length '%v' less than real length '%v'", length, real_len)
+				return
+			} else {
+				length = real_len
+			}
+		}
+	}
 	// Calculate checksum
 	var crc crc
 	crc.reset().pushBytes(adu[0 : length-2])
