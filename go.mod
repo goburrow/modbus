@@ -1,4 +1,4 @@
-module github.com/KatoEngineering/modbus
+module github.com/katoengineering/modbus
 
 go 1.12
 
