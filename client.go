@@ -316,6 +316,44 @@ func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte)
 }
 
 // Request:
+//  Function code         : 1 byte (0x15)
+//  Starting address      : 2 bytes
+//  Quantity of outputs   : 2 bytes
+//  Byte count            : 1 byte
+//  Registers value       : N* bytes
+// Response:
+//  Function code         : 1 byte (0x15)
+//  Starting address      : 2 bytes
+//  Quantity of registers : 2 bytes
+func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, value []byte) error {
+	var responseLength int
+	var err error
+	if quantity < 1 || quantity > 123 {
+		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 123)
+		return err
+	}
+	for i := uint16(0); i < quantity; i++ {
+		addressNext := address + (i * blockSize)
+		valueNext := value[(i * blockSize):((i + 1) * blockSize)]
+		request := ProtocolDataUnit{
+			FunctionCode: FuncCodeWriteFileRecord,
+			Data:         dataBlockSuffix(valueNext, addressNext, blockSize),
+		}
+		response, err := mb.send(&request)
+		if err != nil {
+			return err
+		}
+		responseLength += len(response.Data)
+	}
+	// Fixed response length
+	if responseLength != int(quantity*blockSize) {
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", responseLength, (quantity * blockSize))
+		return err
+	}
+	return nil
+}
+
+// Request:
 //  Function code         : 1 byte (0x16)
 //  Reference address     : 2 bytes
 //  AND-mask              : 2 bytes
