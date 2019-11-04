@@ -20,6 +20,9 @@ type client struct {
 	transporter Transporter
 }
 
+const wFileRecReferenceType = uint16(6)
+const wFileRecUpdateFileNumber = uint16(65535) //0xFFFF as per STM specs
+
 // NewClient creates a new modbus client with given backend handler.
 func NewClient(handler ClientHandler) Client {
 	return &client{packager: handler, transporter: handler}
@@ -328,23 +331,30 @@ func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte)
 func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, value []byte) error {
 	var responseLength int
 	var err error
-	if quantity < 1 || quantity > 123 {
-		err = fmt.Errorf("modbus: quantity '%v' must be between '%v' and '%v',", quantity, 1, 123)
+
+	totalLength := quantity * blockSize
+	if totalLength < 1 || totalLength > 251 {
+		err = fmt.Errorf("modbus: totalLength per modbus msg'%v' must be between '%v' and '%v',", quantity, 1, 251)
 		return err
 	}
-	for i := uint16(0); i < quantity; i++ {
-		addressNext := address + (i * blockSize)
+	bffrReq := make([]byte, 0)
+	for i := uint16(address); i < address+totalLength; i = i + blockSize {
+		recordFilenumber := []byte{byte(i >> 8), byte(i & 0xFF)}
+		bffrReq = append(bffrReq, recordFilenumber...)
+		bffrReq = append(bffrReq, byte(blockSize/2))
 		valueNext := value[(i * blockSize):((i + 1) * blockSize)]
-		request := ProtocolDataUnit{
-			FunctionCode: FuncCodeWriteFileRecord,
-			Data:         dataBlockSuffix(valueNext, addressNext, blockSize),
-		}
-		response, err := mb.send(&request)
-		if err != nil {
-			return err
-		}
-		responseLength += len(response.Data)
+		bffrReq = append(bffrReq, valueNext...)
 	}
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeWriteFileRecord,
+		Data:         dataBlockSuffix(bffrReq, totalLength, wFileRecReferenceType, wFileRecUpdateFileNumber),
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return err
+	}
+	responseLength += len(response.Data)
+
 	// Fixed response length
 	if responseLength != int(quantity*blockSize) {
 		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", responseLength, (quantity * blockSize))
