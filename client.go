@@ -20,8 +20,8 @@ type client struct {
 	transporter Transporter
 }
 
-const wFileRecReferenceType = uint16(6)
-const wFileRecUpdateFileNumber = uint16(65535) //0xFFFF as per STM specs
+var wFileRecReferenceType = []byte{6}
+var wFileRecUpdateFileNumber = []byte{255, 255} //0xFFFF as per STM specs
 
 // NewClient creates a new modbus client with given backend handler.
 func NewClient(handler ClientHandler) Client {
@@ -339,6 +339,8 @@ func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, va
 	}
 	bffrReq := make([]byte, 0)
 	for i := uint16(address); i < address+totalLength; i = i + blockSize {
+		bffrReq = append(bffrReq, wFileRecReferenceType...)
+		bffrReq = append(bffrReq, wFileRecUpdateFileNumber...)
 		recordFilenumber := []byte{byte(i >> 8), byte(i & 0xFF)}
 		bffrReq = append(bffrReq, recordFilenumber...)
 		bffrReq = append(bffrReq, byte(blockSize/2))
@@ -347,7 +349,7 @@ func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, va
 	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeWriteFileRecord,
-		Data:         dataBlockSuffix(bffrReq, totalLength, wFileRecReferenceType, wFileRecUpdateFileNumber),
+		Data:         dataBlockSuffix(bffrReq, totalLength),
 	}
 	response, err := mb.send(&request)
 	if err != nil {
