@@ -339,6 +339,7 @@ func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, va
 	}
 	bffrReq := make([]byte, 0)
 	for i := uint16(address); i < address+totalLength; i = i + blockSize {
+		bffrReq = append(bffrReq, byte(totalLength))
 		bffrReq = append(bffrReq, wFileRecReferenceType...)
 		bffrReq = append(bffrReq, wFileRecUpdateFileNumber...)
 		recordFilenumber := []byte{byte(i >> 8), byte(i & 0xFF)}
@@ -349,7 +350,7 @@ func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, va
 	}
 	request := ProtocolDataUnit{
 		FunctionCode: FuncCodeWriteFileRecord,
-		Data:         dataBlockSuffix(bffrReq, totalLength),
+		Data:         bffrReq,
 	}
 	response, err := mb.send(&request)
 	if err != nil {
