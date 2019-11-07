@@ -37,7 +37,7 @@ type Client interface {
 	WriteMultipleRegisters(address, quantity uint16, value []byte) (results []byte, err error)
 	// WriteFileRecord writes a block of a Record (1 to 251 registers)
 	// in a remote device and returns quantity of registers written.
-	WriteFileRecord(address, quantity uint16, blockSize uint16, value []byte) error
+	WriteFileRecord(address, quantity uint16, SubReqSize uint16, RecUpdateFileNum []byte, value []byte) (results []byte, err error)
 	// ReadWriteMultipleRegisters performs a combination of one read
 	// operation and one write operation. It returns read registers value.
 	ReadWriteMultipleRegisters(readAddress, readQuantity, writeAddress, writeQuantity uint16, value []byte) (results []byte, err error)

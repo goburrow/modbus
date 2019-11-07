@@ -20,9 +20,6 @@ type client struct {
 	transporter Transporter
 }
 
-var wFileRecReferenceType = []byte{6}
-var wFileRecUpdateFileNumber = []byte{255, 255} //0xFFFF as per STM specs
-
 // NewClient creates a new modbus client with given backend handler.
 func NewClient(handler ClientHandler) Client {
 	return &client{packager: handler, transporter: handler}
@@ -328,24 +325,29 @@ func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte)
 //  Function code         : 1 byte (0x15)
 //  Starting address      : 2 bytes
 //  Quantity of registers : 2 bytes
-func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, value []byte) error {
-	var responseLength int
-	var err error
+func (mb *client) WriteFileRecord(address, quantity uint16, subReqSize uint16, recUpdateFileNum []byte, value []byte) (results []byte, err error) {
+	wRecControlFieldsLength := uint16(7)
 
-	totalLength := quantity * blockSize
-	if totalLength < 1 || totalLength > 251 {
-		err = fmt.Errorf("modbus: totalLength per modbus msg'%v' must be between '%v' and '%v',", quantity, 1, 251)
-		return err
+	dataFieldsLength := quantity * subReqSize
+	totalLength := (quantity * (subReqSize + wRecControlFieldsLength)) + 1 //+1 because of Function Code also included
+	if totalLength < 1 || totalLength > 253 {
+		err = fmt.Errorf("modbus: total length per modbus request must be between 1 and 253")
+		return
+	}
+	if len(recUpdateFileNum) != 2 {
+		err = fmt.Errorf("modbus: sub request file number should be a 2 byte value")
+		return
 	}
 	bffrReq := make([]byte, 0)
-	for i := uint16(address); i < address+totalLength; i = i + blockSize {
-		bffrReq = append(bffrReq, byte(totalLength))
-		bffrReq = append(bffrReq, wFileRecReferenceType...)
-		bffrReq = append(bffrReq, wFileRecUpdateFileNumber...)
-		recordFilenumber := []byte{byte(i >> 8), byte(i & 0xFF)}
-		bffrReq = append(bffrReq, recordFilenumber...)
-		bffrReq = append(bffrReq, byte(blockSize/2))
-		valueNext := value[(i * blockSize):((i + 1) * blockSize)]
+	bffrReq = append(bffrReq, byte(totalLength-1))
+	for i := address; i < address+dataFieldsLength; i += subReqSize {
+		bffrReq = append(bffrReq, 6) //Sub Request reference type
+		bffrReq = append(bffrReq, recUpdateFileNum...)
+		recordNumber := []byte{byte(i >> 8), byte(i & 0xFF)}
+		bffrReq = append(bffrReq, recordNumber...)
+		bSize := []byte{byte(subReqSize / 2 >> 8), byte(subReqSize / 2 & 0xFF)}
+		bffrReq = append(bffrReq, bSize...)
+		valueNext := value[(i * subReqSize):((i + 1) * subReqSize)]
 		bffrReq = append(bffrReq, valueNext...)
 	}
 	request := ProtocolDataUnit{
@@ -354,16 +356,15 @@ func (mb *client) WriteFileRecord(address, quantity uint16, blockSize uint16, va
 	}
 	response, err := mb.send(&request)
 	if err != nil {
-		return err
+		return
 	}
-	responseLength += len(response.Data)
-
 	// Fixed response length
-	if responseLength != int(quantity*blockSize) {
-		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", responseLength, (quantity * blockSize))
-		return err
+	if len(response.Data) != int(totalLength) {
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), int(totalLength))
+		return
 	}
-	return nil
+	results = response.Data[2:]
+	return
 }
 
 // Request:
