@@ -338,6 +338,10 @@ func (mb *client) WriteFileRecord(address, quantity uint16, subReqSize uint16, r
 		err = fmt.Errorf("modbus: sub request file number should be a 2 byte value")
 		return
 	}
+	if len(value) < int(address+dataFieldsLength) {
+		err = fmt.Errorf("modbus: value input parameter length is not enough given address, quantity and subReqSize requested")
+		return
+	}
 	bffrReq := make([]byte, 0)
 	bffrReq = append(bffrReq, byte(totalLength-1))
 	for i := address; i < address+dataFieldsLength; i += subReqSize {
