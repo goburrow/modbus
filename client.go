@@ -351,7 +351,7 @@ func (mb *client) WriteFileRecord(address, quantity uint16, subReqSize uint16, r
 		bffrReq = append(bffrReq, recordNumber...)
 		bSize := []byte{byte(subReqSize / 2 >> 8), byte(subReqSize / 2 & 0xFF)}
 		bffrReq = append(bffrReq, bSize...)
-		valueNext := value[(i * subReqSize):((i + 1) * subReqSize)]
+		valueNext := value[int(i * subReqSize):int((i + 1) * subReqSize)]
 		bffrReq = append(bffrReq, valueNext...)
 	}
 	request := ProtocolDataUnit{
