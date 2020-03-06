@@ -344,7 +344,7 @@ func (mb *client) WriteFileRecord(address, quantity uint16, subReqSize uint16, r
 	}
 	bffrReq := make([]byte, 0)
 	bffrReq = append(bffrReq, byte(totalLength-1))
-	for i := address; i < address+dataFieldsLength; i += subReqSize {
+	for i := int(address); i < int(address+dataFieldsLength); i += int(subReqSize) {
 		bffrReq = append(bffrReq, 6) //Sub Request reference type
 		bffrReq = append(bffrReq, recUpdateFileNum...)
 		recordNumber := []byte{byte(i >> 8), byte(i & 0xFF)}
