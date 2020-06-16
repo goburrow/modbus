@@ -41,6 +41,16 @@ func NewTCPClientHandler(address string) *TCPClientHandler {
 	return h
 }
 
+// NewTCPConnClientHandler allocates a new TCPClientHandler.
+func NewTCPConnClientHandler(address string, conn net.Conn) *TCPClientHandler {
+	h := &TCPClientHandler{}
+	h.Address = address
+	h.Timeout = tcpTimeout
+	h.IdleTimeout = tcpIdleTimeout
+	h.conn = conn
+	return h
+}
+
 // TCPClient creates TCP client with default handler and given connect string.
 func TCPClient(address string) Client {
 	handler := NewTCPClientHandler(address)
