@@ -1,6 +1,13 @@
 go modbus [![Build Status](https://travis-ci.org/goburrow/modbus.svg?branch=master)](https://travis-ci.org/goburrow/modbus) [![GoDoc](https://godoc.org/github.com/goburrow/modbus?status.svg)](https://godoc.org/github.com/goburrow/modbus)
 =========
-Fault-tolerant, fail-fast implementation of Modbus protocol in Go.
+This is a fork of https://github.com/gburrow/modbus (possibly abandoned),
+a Fault-tolerant, fail-fast implementation of Modbus protocol in Go.
+
+Bug fixes
+-------------------
+* Add a read buffer flush for tcp clients just prior to launching the next call.  This
+  resolves transaction ID mismatches that cause the connection to never work
+  again.
 
 Supported functions
 -------------------

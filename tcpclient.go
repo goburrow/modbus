@@ -156,6 +156,18 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	// Set timer to close when idle
 	mb.lastActivity = time.Now()
 	mb.startCloseTimer()
+
+	/*
+	 * If an answer to a previously timed-out request is already in teh buffer, this will result
+	 * in a transaction ID mismatch from which we will never recover.  To prevent this, just
+	 * flush any previous reponses before launching the next poll.  That's throwing away
+	 * possibly useful data, but the previous request was already satisfied with a timeout
+	 * error so that probably makes the most sense here.
+	 *
+	 * Be aware that this call resets the read deadline.
+	 */
+	mb.flushAll()
+
 	// Set write and read timeout
 	var timeout time.Time
 	if mb.Timeout > 0 {
@@ -252,6 +264,31 @@ func (mb *tcpTransporter) flush(b []byte) (err error) {
 	return
 }
 
+/**
+ * This function implements a non-blocking read flush.  Be warned it resets
+ * the read deadline.
+ */
+func (mb *tcpTransporter) flushAll() (int, error) {
+	if err := mb.conn.SetReadDeadline(time.Now()); err != nil {
+		return 0, err
+	}
+
+	count := 0
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := mb.conn.Read(buffer)
+
+		if err != nil {
+			return count + n, err
+		} else if n > 0 {
+			count = count + n
+		} else {
+			/* didn't flush any new bytes, return */
+			return count, err
+		}
+	}
+}
 func (mb *tcpTransporter) logf(format string, v ...interface{}) {
 	if mb.Logger != nil {
 		mb.Logger.Printf(format, v...)
