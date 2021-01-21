@@ -432,6 +432,36 @@ func (mb *client) ReadFIFOQueue(address uint16) (results []byte, err error) {
 	return
 }
 
+// Request:
+//  Function code         : 1 byte (0x2B) - Encapsulated Interface Transport, escape code for expanding into custom functionality
+//  MEI type              : 1 byte (0x0E) - Either 0x0E for Modbus or 0x0D for CANopen
+//  Read device id code   : 1 byte (0x04) - individual object access(4) OR stream basic (1), regular(2) or extended (3)
+//  Object id             : 1 byte        - first object ID 0x00-0x7F specified or reserved, 0x80-0xFF are product specific
+// Response: - if function is supported, otherwise just a plain 'illegal function' is returned 
+//  Function code         : 1 byte (0x2B)(+ 0x80 if a malformated request was made)
+//  MEI type              : 1 byte (0x0E)
+//  Read device id code   : 1 byte (0x04)
+//  Conformity level      : 1 byte (0x01-0x04)(+ 0x80 if individual access is supported)
+//  More follows          : 1 byte (0x00) must be zero for individual access, 0xFF if more batches can be fetched
+//  Next object id        : 1 byte (0x00) must be zero for individual access, start of next batch otherwise
+//  Number of objects     : 1 byte (0x01) must be 0x01 for individual access, otherwise how many objects in current batch
+//  Repeated for each object:
+//   Object id            : 1 byte        - object ID 0x00-0x7F specified or reserved, 0x80-0xFF are product specific
+//   Object length        : 1 byte        - bytes of value
+//   Object value         : Object        - length byte(s)
+func (mb *client) ReadIndividualDeviceIdentification(objectID uint8) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeDeviceIdentification,
+		Data:         []byte{0x0E, 0x04, objectID},
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	results = response.Data[3:] // Strip of function code, MEI type and Read Device Id Code
+	return
+}
+
 // Helpers
 
 // send sends request and checks possible exception in the response.
