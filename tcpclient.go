@@ -243,7 +243,13 @@ func (mb *tcpTransporter) Close() error {
 	mb.mu.Lock()
 	defer mb.mu.Unlock()
 
-	return mb.close()
+	err := mb.close()
+	if err == nil {
+		if mb.closeTimer != nil {
+			mb.closeTimer.Stop()
+		}
+	}
+	return err
 }
 
 // flush flushes pending data in the connection,
