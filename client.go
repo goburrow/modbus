@@ -316,6 +316,62 @@ func (mb *client) WriteMultipleRegisters(address, quantity uint16, value []byte)
 }
 
 // Request:
+//  Function code         : 1 byte (0x15)
+//  Starting address      : 2 bytes
+//  Quantity of outputs   : 2 bytes
+//  Byte count            : 1 byte
+//  Registers value       : N* bytes
+// Response:
+//  Function code         : 1 byte (0x15)
+//  Starting address      : 2 bytes
+//  Quantity of registers : 2 bytes
+func (mb *client) WriteFileRecord(address, quantity uint16, subReqSize uint16, recUpdateFileNum []byte, value []byte) (results []byte, err error) {
+	wRecControlFieldsLength := uint16(7)
+
+	dataFieldsLength := quantity * subReqSize
+	totalLength := (quantity * (subReqSize + wRecControlFieldsLength)) + 1 //+1 because of Function Code also included
+	if totalLength < 1 || totalLength > 253 {
+		err = fmt.Errorf("modbus: total length per modbus request must be between 1 and 253")
+		return
+	}
+	if len(recUpdateFileNum) != 2 {
+		err = fmt.Errorf("modbus: sub request file number should be a 2 byte value")
+		return
+	}
+	if len(value) < int(address+dataFieldsLength) {
+		err = fmt.Errorf("modbus: value input parameter length is not enough given address, quantity and subReqSize requested")
+		return
+	}
+	bffrReq := make([]byte, 0)
+	bffrReq = append(bffrReq, byte(totalLength-1))
+	for i := int(address); i < int(address+dataFieldsLength); i += int(subReqSize) {
+		bffrReq = append(bffrReq, 6) //Sub Request reference type
+		bffrReq = append(bffrReq, recUpdateFileNum...)
+		recordNumber := []byte{byte(i >> 8), byte(i & 0xFF)}
+		bffrReq = append(bffrReq, recordNumber...)
+		bSize := []byte{byte(subReqSize / 2 >> 8), byte(subReqSize / 2 & 0xFF)}
+		bffrReq = append(bffrReq, bSize...)
+		valueNext := value[i*int(subReqSize) : (i+1)*int(subReqSize)]
+		bffrReq = append(bffrReq, valueNext...)
+	}
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeWriteFileRecord,
+		Data:         bffrReq,
+	}
+	response, err := mb.send(&request)
+	if err != nil {
+		return
+	}
+	// Fixed response length
+	if len(response.Data) != int(totalLength) {
+		err = fmt.Errorf("modbus: response data size '%v' does not match expected '%v'", len(response.Data), int(totalLength))
+		return
+	}
+	results = response.Data[2:]
+	return
+}
+
+// Request:
 //  Function code         : 1 byte (0x16)
 //  Reference address     : 2 bytes
 //  AND-mask              : 2 bytes
