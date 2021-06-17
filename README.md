@@ -18,7 +18,7 @@ Bit access:
 *   Read/Write Multiple Registers
 *   Mask Write Register
 *   Read FIFO Queue
-
+*   Read Device Identification
 Supported formats
 -----------------
 *   TCP
@@ -73,6 +73,25 @@ client := modbus.NewClient(handler)
 results, err := client.ReadDiscreteInputs(15, 2)
 ```
 
+```go
+// Read device identification
+results, err := client.ReadDeviceIdentification(1, 0)
+
+if err == nil {
+    objNumber := results[0]
+
+    currStart := byte(1)
+    for i := byte(0); i < objNumber; i++ {
+        currID := results[currStart]
+        currLen := results[currStart+byte(1)]
+        currObj := results[currStart+byte(2) : currStart+byte(2)+currLen]
+        currStart += byte(2) + currLen
+        fmt.Printf("Object ID % x\n Object LEN: % x\nCurr OBJ = %s\n", currID, currLen, currObj)
+    }
+}
+```
+
 References
 ----------
 -   [Modbus Specifications and Implementation Guides](http://www.modbus.org/specs.php)
+-   [Modbus Application Protocol](https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf)
