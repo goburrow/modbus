@@ -155,6 +155,46 @@ func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, 
 }
 
 // Request:
+//  Device ID Code		  : 1 byte
+//  Object ID		      : 1 byte
+// Response:
+//  Objects number        : 1 byte
+//  Objects data		  : N bytes
+func (mb *client) ReadDeviceIdentification(devIdCode byte, objectId byte) (results []byte, err error) {
+	request := ProtocolDataUnit{
+		FunctionCode: FuncCodeDevId,
+		Data:         []byte{MEITypeDevId, devIdCode, objectId},
+	}
+
+	aduRequest, err := mb.packager.Encode(&request)
+	if err != nil {
+		return
+	}
+
+	aduResponse, err := mb.transporter.Send(aduRequest)
+	if err != nil {
+		return
+	}
+
+	length := len(aduResponse)
+	if length < 14 {
+		err = fmt.Errorf("Read Devce ID should response minumum 14 bytes: %v recieved", length)
+		return
+	}
+
+	rxLen := binary.BigEndian.Uint16(aduResponse[4:6])
+	length -= 6
+
+	if int(rxLen) != length {
+		err = fmt.Errorf("modbus: response data size '%v' does not match count '%v'", length, rxLen)
+		return
+	}
+
+	results = aduResponse[13 : 14+rxLen]
+	return
+}
+
+// Request:
 //  Function code         : 1 byte (0x05)
 //  Output address        : 2 bytes
 //  Output value          : 2 bytes
