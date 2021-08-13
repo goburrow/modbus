@@ -6,6 +6,7 @@ package modbus
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -25,6 +26,8 @@ const (
 	tcpTimeout     = 10 * time.Second
 	tcpIdleTimeout = 60 * time.Second
 )
+
+var ErrTxIDMismatch = errors.New("transaction id does not match")
 
 // TCPClientHandler implements Packager and Transporter interface.
 type TCPClientHandler struct {
@@ -88,7 +91,7 @@ func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 	responseVal := binary.BigEndian.Uint16(aduResponse)
 	requestVal := binary.BigEndian.Uint16(aduRequest)
 	if responseVal != requestVal {
-		err = fmt.Errorf("modbus: response transaction id '%v' does not match request '%v'", responseVal, requestVal)
+		err = fmt.Errorf("modbus: response transaction id '%v' does not match request '%v': %w", responseVal, requestVal, ErrTxIDMismatch)
 		return
 	}
 	// Protocol id
