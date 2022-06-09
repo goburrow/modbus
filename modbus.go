@@ -90,4 +90,6 @@ type Packager interface {
 // Transporter specifies the transport layer.
 type Transporter interface {
 	Send(aduRequest []byte) (aduResponse []byte, err error)
+	Connect() error
+	Close() error
 }
