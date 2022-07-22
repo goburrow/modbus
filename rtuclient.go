@@ -208,3 +208,10 @@ func calculateResponseLength(adu []byte) int {
 	}
 	return length
 }
+
+// close serial port
+func (mb *rtuSerialTransporter) Close() error {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+	return mb.serialPort.Close()
+}
