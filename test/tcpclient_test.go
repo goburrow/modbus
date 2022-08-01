@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goburrow/modbus"
+	"github.com/wwhai/modbus"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goburrow/serial"
+	"github.com/wwhai/serial"
 )
 
 const (

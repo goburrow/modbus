@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/goburrow/modbus"
+	"github.com/wwhai/modbus"
 )
 
 const (
