@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wwhai/serial"
+	"github.com/wwhai/goserial"
 )
 
 const (
