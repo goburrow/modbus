@@ -53,10 +53,12 @@ func (mb *serialPort) connect() error {
 	return nil
 }
 
+/*
+*
+* Export close# By:wwhai@cnwwhai@gmail.com
+*
+ */
 func (mb *serialPort) Close() (err error) {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
-
 	return mb.close()
 }
 
