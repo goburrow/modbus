@@ -108,7 +108,7 @@ func (mb *encTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	if _, err = io.ReadFull(mb.conn, data[:encHeaderSize]); err != nil {
 		return
 	}
-	mb.logf("modbus: header % x", data[:encHeaderSize])
+	//mb.logf("modbus: header % x", data[:encHeaderSize])
 
 	length := data[2]
 	if length <= 0 {
@@ -127,13 +127,13 @@ func (mb *encTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	if _, err = io.ReadFull(mb.conn, data[encHeaderSize:length]); err != nil {
 		return
 	}
-	mb.logf("modbus: data % x", data[encHeaderSize:length])
+	//mb.logf("modbus: data % x", data[encHeaderSize:length])
 
 	//read CRC
 	if _, err = io.ReadFull(mb.conn, data[length:length+encCrcSize]); err != nil {
 		return
 	}
-	mb.logf("modbus: crc % x", data[length:length+encCrcSize])
+	//mb.logf("modbus: crc % x", data[length:length+encCrcSize])
 
 	aduResponse = data[:length+encCrcSize]
 	mb.logf("modbus: received % x\n", aduResponse)

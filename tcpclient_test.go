@@ -18,7 +18,7 @@ func TestTCPEncoding(t *testing.T) {
 	pdu.FunctionCode = 3
 	pdu.Data = []byte{0, 4, 0, 3}
 
-	adu, err := packager.Encode(&pdu)
+	adu, err := packager.Encode(0, &pdu)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,6 @@ func TestTCPEncoding(t *testing.T) {
 func TestTCPDecoding(t *testing.T) {
 	packager := tcpPackager{}
 	packager.transactionId = 1
-	packager.SlaveId = 17
 	adu := []byte{0, 1, 0, 0, 0, 6, 17, 3, 0, 120, 0, 3}
 
 	pdu, err := packager.Decode(adu)
@@ -89,15 +88,13 @@ func TestTCPTransporter(t *testing.T) {
 }
 
 func BenchmarkTCPEncoder(b *testing.B) {
-	encoder := tcpPackager{
-		SlaveId: 10,
-	}
+	encoder := tcpPackager{}
 	pdu := ProtocolDataUnit{
 		FunctionCode: 1,
 		Data:         []byte{2, 3, 4, 5, 6, 7, 8, 9},
 	}
 	for i := 0; i < b.N; i++ {
-		_, err := encoder.Encode(&pdu)
+		_, err := encoder.Encode(10, &pdu)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -105,9 +102,7 @@ func BenchmarkTCPEncoder(b *testing.B) {
 }
 
 func BenchmarkTCPDecoder(b *testing.B) {
-	decoder := tcpPackager{
-		SlaveId: 10,
-	}
+	decoder := tcpPackager{}
 	adu := []byte{0, 1, 0, 0, 0, 6, 17, 3, 0, 120, 0, 3}
 	for i := 0; i < b.N; i++ {
 		_, err := decoder.Decode(adu)

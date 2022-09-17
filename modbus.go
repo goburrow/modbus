@@ -40,6 +40,11 @@ const (
 	ExceptionCodeGatewayTargetDeviceFailedToRespond = 11
 )
 
+const (
+	SlaveIdMin = 1
+	SlaveIdMax = 247
+)
+
 // ModbusError implements error interface.
 type ModbusError struct {
 	FunctionCode  byte
@@ -82,7 +87,7 @@ type ProtocolDataUnit struct {
 
 // Packager specifies the communication layer.
 type Packager interface {
-	Encode(pdu *ProtocolDataUnit) (adu []byte, err error)
+	Encode(slaveId uint8, pdu *ProtocolDataUnit) (adu []byte, err error)
 	Decode(adu []byte) (pdu *ProtocolDataUnit, err error)
 	Verify(aduRequest []byte, aduResponse []byte) (err error)
 }
