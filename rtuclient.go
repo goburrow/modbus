@@ -111,6 +111,9 @@ type rtuSerialTransporter struct {
 }
 
 func (mb *rtuSerialTransporter) Send(aduRequest []byte) (aduResponse []byte, err error) {
+	mb.mu.Lock()
+	defer mb.mu.Unlock()
+
 	// Make sure port is connected
 	if err = mb.serialPort.connect(); err != nil {
 		return
