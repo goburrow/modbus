@@ -41,6 +41,16 @@ func NewTCPClientHandler(address string) *TCPClientHandler {
 	return h
 }
 
+// TCPHandlerFromConnection creates a TCP handler from an existing connection.
+func TCPHandlerFromConnection(conn net.Conn) *TCPClientHandler {
+	return &TCPClientHandler{
+		conn:        conn,
+		Address:     conn.RemoteAddr().String(),
+		Timeout:     tcpTimeout,
+		IdleTimeout: tcpIdleTimeout,
+	}
+}
+
 // TCPClient creates TCP client with default handler and given connect string.
 func TCPClient(address string) Client {
 	handler := NewTCPClientHandler(address)
