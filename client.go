@@ -61,7 +61,7 @@ func (mb *client) ReadCoils(address, quantity uint16) (results []byte, err error
 		return
 	}
 	if count != int(quantity) {
-		err = fmt.Errorf("modbus: response data size '%v' does not request quantity '%v'", count, quantity)
+		err = fmt.Errorf("modbus: response count '%v' does not match request quantity '%v'", count, quantity)
 		return
 	}
 	results = response.Data[1:]
@@ -99,7 +99,7 @@ func (mb *client) ReadDiscreteInputs(address, quantity uint16) (results []byte, 
 		return
 	}
 	if count != int(quantity) {
-		err = fmt.Errorf("modbus: response data size '%v' does not request quantity '%v'", count, quantity)
+		err = fmt.Errorf("modbus: response count '%v' does not match request quantity '%v'", count, quantity)
 		return
 	}
 	results = response.Data[1:]
@@ -137,7 +137,7 @@ func (mb *client) ReadHoldingRegisters(address, quantity uint16) (results []byte
 		return
 	}
 	if count != int(quantity)*2 {
-		err = fmt.Errorf("modbus: response data size '%v' does not request quantity '%v'", count, quantity)
+		err = fmt.Errorf("modbus: response count '%v' does not match request quantity '%v'", count, quantity)
 		return
 	}
 	results = response.Data[1:]
@@ -175,7 +175,7 @@ func (mb *client) ReadInputRegisters(address, quantity uint16) (results []byte, 
 		return
 	}
 	if count != int(quantity)*2 {
-		err = fmt.Errorf("modbus: response data size '%v' does not request quantity '%v'", count, quantity)
+		err = fmt.Errorf("modbus: response count '%v' does not match request quantity '%v'", count, quantity)
 		return
 	}
 	results = response.Data[1:]
@@ -498,7 +498,7 @@ func (mb *client) ReadWriteMultipleRegisters(readAddress, readQuantity, writeAdd
 		return
 	}
 	if count != int(readQuantity)*2 {
-		err = fmt.Errorf("modbus: response data size '%v' does not request quantity '%v'", count, readQuantity)
+		err = fmt.Errorf("modbus: response count '%v' does not match request quantity '%v'", count, readQuantity)
 		return
 	}
 	results = response.Data[1:]
