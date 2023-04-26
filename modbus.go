@@ -23,6 +23,7 @@ const (
 	FuncCodeReadHoldingRegisters       = 3
 	FuncCodeWriteSingleRegister        = 6
 	FuncCodeWriteMultipleRegisters     = 16
+	FuncCodeWriteFileRecord            = 21
 	FuncCodeReadWriteMultipleRegisters = 23
 	FuncCodeMaskWriteRegister          = 22
 	FuncCodeReadFIFOQueue              = 24

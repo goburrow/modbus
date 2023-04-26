@@ -53,11 +53,17 @@ func (mb *serialPort) connect() error {
 	return nil
 }
 
-func (mb *serialPort) Close() (err error) {
+func (mb *serialPort) Close() error {
 	mb.mu.Lock()
 	defer mb.mu.Unlock()
 
-	return mb.close()
+	err := mb.close()
+	if err == nil {
+		if mb.closeTimer != nil {
+			mb.closeTimer.Stop()
+		}
+	}
+	return err
 }
 
 // close closes the serial port if it is connected. Caller must hold the mutex.
