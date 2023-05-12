@@ -28,8 +28,12 @@ const (
 	FuncCodeReadFIFOQueue              = 24
 
 	//Device ID
-	FuncCodeDevId = 0x2B
-	MEITypeDevId  = 0x0E
+	FuncCodeDevId                = 0x2B
+	MEITypeDevId                 = 0x0E
+	BasicDeviceIdentification    = 1
+	RegularDeviceIdentification  = 2
+	ExtendedDeviceIdentification = 3
+	SingleDeviceIdentification   = 4
 )
 
 const (

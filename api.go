@@ -30,6 +30,7 @@ type Client interface {
 	ReadHoldingRegisters(address, quantity uint16) (results []byte, err error)
 
 	ReadDeviceIdentification(devIdCode byte, objectId byte) (results []byte, err error)
+	GetDeviceIdentification(devIdCode byte, objectId byte) (results DeviceIdentification, err error)
 
 	// WriteSingleRegister writes a single holding register in a remote
 	// device and returns register value.

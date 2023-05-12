@@ -194,6 +194,17 @@ func (mb *client) ReadDeviceIdentification(devIdCode byte, objectId byte) (resul
 	return
 }
 
+func (mb *client) GetDeviceIdentification(devIdCode byte, objectId byte) (results DeviceIdentification, err error) {
+	raw, err := mb.ReadDeviceIdentification(devIdCode, objectId)
+
+	if err != nil {
+		return
+	}
+
+	results = ParseDeviceIdentification(raw)
+	return
+}
+
 // Request:
 //  Function code         : 1 byte (0x05)
 //  Output address        : 2 bytes
