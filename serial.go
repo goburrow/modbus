@@ -58,15 +58,10 @@ func (mb *serialPort) connect() error {
 * Export close# By:wwhai@cnwwhai@gmail.com
 *
  */
-func (mb *serialPort) Close() (err error) {
-	return mb.close()
-}
-
 // close closes the serial port if it is connected. Caller must hold the mutex.
-func (mb *serialPort) close() (err error) {
+func (mb *serialPort) Close() (err error) {
 	if mb.port != nil {
 		err = mb.port.Close()
-		mb.port = nil
 	}
 	return
 }
