@@ -1,4 +1,4 @@
-go modbus [![Build Status](https://travis-ci.org/wwhai/modbus.svg?branch=master)](https://travis-ci.org/wwhai/modbus) [![GoDoc](https://godoc.org/github.com/wwhai/modbus?status.svg)](https://godoc.org/github.com/wwhai/modbus)
+go modbus [![Build Status](https://travis-ci.org/wwhai/modbus.svg?branch=master)](https://travis-ci.org/wwhai/modbus) [![GoDoc](https://godoc.org/github.com/wwhai/gomodbus?status.svg)](https://godoc.org/github.com/wwhai/gomodbus)
 =========
 Fault-tolerant, fail-fast implementation of Modbus protocol in Go.
 
