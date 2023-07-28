@@ -6,6 +6,8 @@ package modbus
 
 import (
 	"bytes"
+	"log"
+	"os"
 	"testing"
 )
 
@@ -95,4 +97,37 @@ func BenchmarkRTUDecoder(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func Test_RTU_ClientHandler(t *testing.T) {
+	handler := NewRTUClientHandler("COM6")
+	handler.BaudRate = 4800
+	handler.DataBits = 8
+	handler.Parity = "N"
+	handler.StopBits = 1
+	handler.SlaveId = 1
+	handler.Logger = log.New(os.Stdout, "rtu: ", log.LstdFlags)
+
+	err := handler.Connect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handler.Close()
+	client := NewClient(handler)
+	defer client.GetTransporter().Close()
+	t.Log(client.ReadCoils(0, 10))
+}
+func Test_TCP_ClientHandler(t *testing.T) {
+	handler := NewTCPClientHandler("127.0.0.1:502")
+	handler.SlaveId = 1
+	handler.Logger = log.New(os.Stdout, "tcp: ", log.LstdFlags)
+
+	err := handler.Connect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handler.Close()
+	client := NewClient(handler)
+	defer client.GetTransporter().Close()
+	t.Log(client.ReadCoils(0, 1))
 }

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goburrow/serial"
+	"github.com/wwhai/goserial"
 )
 
 const (
@@ -53,18 +53,15 @@ func (mb *serialPort) connect() error {
 	return nil
 }
 
-func (mb *serialPort) Close() (err error) {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
-
-	return mb.close()
-}
-
+/*
+*
+* Export close# By:wwhai@cnwwhai@gmail.com
+*
+ */
 // close closes the serial port if it is connected. Caller must hold the mutex.
-func (mb *serialPort) close() (err error) {
+func (mb *serialPort) Close() (err error) {
 	if mb.port != nil {
 		err = mb.port.Close()
-		mb.port = nil
 	}
 	return
 }
@@ -94,9 +91,10 @@ func (mb *serialPort) closeIdle() {
 	if mb.IdleTimeout <= 0 {
 		return
 	}
-	idle := time.Now().Sub(mb.lastActivity)
+	// idle := time.Now().Sub(mb.lastActivity)
+	idle := time.Since(mb.lastActivity)
 	if idle >= mb.IdleTimeout {
 		mb.logf("modbus: closing connection due to idle timeout: %v", idle)
-		mb.close()
+		mb.Close()
 	}
 }

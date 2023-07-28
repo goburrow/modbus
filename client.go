@@ -30,6 +30,11 @@ func NewClient2(packager Packager, transporter Transporter) Client {
 	return &client{packager: packager, transporter: transporter}
 }
 
+// get Transporter
+func (mb *client) GetTransporter() Transporter {
+	return mb.transporter
+}
+
 // Request:
 //  Function code         : 1 byte (0x01)
 //  Starting address      : 2 bytes
