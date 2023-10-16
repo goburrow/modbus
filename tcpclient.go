@@ -16,6 +16,44 @@ import (
 )
 
 const (
+	ExceptionCodeWrongTransactionId = 1
+	ExceptionCodeWrongProtocolId    = 2
+	ExceptionCodeWrongUnitId        = 3
+	ExceptionCodeWrongSize          = 4
+	ExceptionCodeLengthZero         = 5
+	ExceptionCodeLengthMaxSize      = 6
+)
+
+// ModbusError implements error interface.
+type ModbusTCPError struct {
+	ExceptionCode byte
+	Request       interface{}
+	Response      interface{}
+}
+
+// Error converts known modbus TCP exception code to error message.
+func (e *ModbusTCPError) Error() string {
+	var name string
+	switch e.ExceptionCode {
+	case ExceptionCodeWrongTransactionId:
+		name = "modbus: response transaction id '%v' does not match request '%v'"
+	case ExceptionCodeWrongProtocolId:
+		name = "modbus: response protocol id '%v' does not match request '%v'"
+	case ExceptionCodeWrongUnitId:
+		name = "modbus: response unit id '%v' does not match request '%v'"
+	case ExceptionCodeWrongSize:
+		name = "modbus: length in response '%v' does not match pdu data length '%v'"
+	case ExceptionCodeLengthZero:
+		name = "modbus: length in response header '%v' must not be zero"
+	case ExceptionCodeLengthMaxSize:
+		name = "modbus: length in response header '%v' must not greater than '%v'"
+	default:
+		name = "unknown"
+	}
+	return fmt.Sprintf(name, e.Request, e.Response)
+}
+
+const (
 	tcpProtocolIdentifier uint16 = 0x0000
 
 	// Modbus Application Protocol
@@ -88,20 +126,29 @@ func (mb *tcpPackager) Verify(aduRequest []byte, aduResponse []byte) (err error)
 	responseVal := binary.BigEndian.Uint16(aduResponse)
 	requestVal := binary.BigEndian.Uint16(aduRequest)
 	if responseVal != requestVal {
-		err = fmt.Errorf("modbus: response transaction id '%v' does not match request '%v'", responseVal, requestVal)
-		return
+		return &ModbusTCPError{
+			ExceptionCode: ExceptionCodeWrongTransactionId,
+			Request:       requestVal,
+			Response:      responseVal,
+		}
 	}
 	// Protocol id
 	responseVal = binary.BigEndian.Uint16(aduResponse[2:])
 	requestVal = binary.BigEndian.Uint16(aduRequest[2:])
 	if responseVal != requestVal {
-		err = fmt.Errorf("modbus: response protocol id '%v' does not match request '%v'", responseVal, requestVal)
-		return
+		return &ModbusTCPError{
+			ExceptionCode: ExceptionCodeWrongProtocolId,
+			Request:       requestVal,
+			Response:      responseVal,
+		}
 	}
 	// Unit id (1 byte)
 	if aduResponse[6] != aduRequest[6] {
-		err = fmt.Errorf("modbus: response unit id '%v' does not match request '%v'", aduResponse[6], aduRequest[6])
-		return
+		return &ModbusTCPError{
+			ExceptionCode: ExceptionCodeWrongUnitId,
+			Request:       aduResponse[6],
+			Response:      aduRequest[6],
+		}
 	}
 	return
 }
@@ -116,8 +163,11 @@ func (mb *tcpPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	length := binary.BigEndian.Uint16(adu[4:])
 	pduLength := len(adu) - tcpHeaderSize
 	if pduLength <= 0 || pduLength != int(length-1) {
-		err = fmt.Errorf("modbus: length in response '%v' does not match pdu data length '%v'", length-1, pduLength)
-		return
+		return pdu, &ModbusTCPError{
+			ExceptionCode: ExceptionCodeWrongSize,
+			Request:       length - 1,
+			Response:      pduLength,
+		}
 	}
 	pdu = &ProtocolDataUnit{}
 	// The first byte after header is function code
@@ -178,13 +228,18 @@ func (mb *tcpTransporter) Send(aduRequest []byte) (aduResponse []byte, err error
 	length := int(binary.BigEndian.Uint16(data[4:]))
 	if length <= 0 {
 		mb.flush(data[:])
-		err = fmt.Errorf("modbus: length in response header '%v' must not be zero", length)
-		return
+		return aduResponse, &ModbusTCPError{
+			ExceptionCode: ExceptionCodeLengthZero,
+			Request:       length,
+		}
 	}
 	if length > (tcpMaxLength - (tcpHeaderSize - 1)) {
 		mb.flush(data[:])
-		err = fmt.Errorf("modbus: length in response header '%v' must not greater than '%v'", length, tcpMaxLength-tcpHeaderSize+1)
-		return
+		return aduResponse, &ModbusTCPError{
+			ExceptionCode: ExceptionCodeLengthMaxSize,
+			Request:       length,
+			Response:      tcpMaxLength - tcpHeaderSize + 1,
+		}
 	}
 	// Skip unit id
 	length += tcpHeaderSize - 1
